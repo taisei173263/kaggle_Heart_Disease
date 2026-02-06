@@ -40,3 +40,8 @@ Thumbs.db
 
 # Kaggle
 kaggle.json
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log

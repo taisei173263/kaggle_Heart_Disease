@@ -3,20 +3,71 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: kaggle-s6e2-heart
+      args:
+        # ホストのUID/GIDに合わせる（コンテナ内で作成したファイルの権限問題を回避）
+        # 自分のUID/GIDを確認: id -u && id -g
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    image: kaggle-s6e2-heart:latest
     container_name: kaggle-s6e2-heart
+    
+    # UID/GIDを明示的に指定（Dockerfileと合わせる）
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+    
     volumes:
-      # プロジェクト全体をマウント（大学サーバー binds 利用時はパスを要調整）
+      # 1. プロジェクト全体をマウント
       - ..:/workspace
+      
+      # 2. 共有ストレージ（大学サーバーの共有データ領域）
+      - /data1/share/kaggle-zemi:/data
+      
+      # 3. Kaggle API認証情報（各ユーザーのホームディレクトリから）
+      # ~/.kaggle/kaggle.json が存在する場合のみマウント
+      # 存在しない場合はコメントアウトするか、事前に作成しておく
+      - ${HOME}/.kaggle:/home/kaggle/.kaggle:ro
+      
+      # 4. JupyterLab設定の永続化（オプション）
+      - jupyter-config:/home/kaggle/.jupyter
+    
     working_dir: /workspace
+    
+    # 環境変数
+    environment:
+      # Kaggle API認証（.envファイルまたは~/.kaggle/kaggle.jsonで設定）
+      - KAGGLE_CONFIG_DIR=/home/kaggle/.kaggle
+      # JupyterLab設定
+      - JUPYTER_ENABLE_LAB=yes
+    
+    # ポート公開（JupyterLab用）
+    ports:
+      - "8888:8888"  # JupyterLab（ポート競合時は "8889:8888" 等に変更）
+    
+    # コンテナを起動し続ける
     stdin_open: true
     tty: true
-    # GPU 利用する場合（CUDA 環境がある場合）
+    
+    # GPU利用設定（NVIDIA Container Toolkit必須）
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              count: all  # 全GPUを利用（制限する場合は count: 1 等に変更）
               capabilities: [gpu]
-    # GPU を使わない場合は上記 deploy ブロックをコメントアウトする
+    
+    # デフォルトコマンド（JupyterLabを起動）
+    # bash のみで起動したい場合は command: bash に変更
+    command: >
+      bash -c "
+      jupyter lab
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --allow-root
+      --NotebookApp.token=''
+      --NotebookApp.password=''
+      "
+
+# 名前付きボリューム（JupyterLab設定の永続化用）
+volumes:
+  jupyter-config:

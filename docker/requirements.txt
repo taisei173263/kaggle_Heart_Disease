@@ -1,9 +1,28 @@
-# Kaggle S6E2 Heart - Python 依存
+# Kaggle S6E2 Heart - Python 依存パッケージ
+# データ処理・可視化
 pandas>=2.0
 numpy>=1.24
+matplotlib>=3.7
+seaborn>=0.12
+plotly>=5.14
+
+# 機械学習フレームワーク
 scikit-learn>=1.3
 xgboost>=2.0
 lightgbm>=4.0
-# 必要に応じて追加
-# catboost
-# optuna
+catboost>=1.2
+
+# ハイパーパラメータ最適化
+optuna>=3.3
+
+# Jupyter環境
+jupyterlab>=4.0
+ipywidgets>=8.0
+notebook>=7.0
+
+# Kaggle API
+kaggle>=1.5
+
+# その他ユーティリティ
+tqdm>=4.65
+python-dotenv>=1.0

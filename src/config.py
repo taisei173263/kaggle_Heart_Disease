@@ -21,3 +21,6 @@ DEFAULT_SEED = 42
 
 # 評価指標
 EVAL_METRIC = "roc_auc"
+
+# Kaggle コンペ ID（提出コマンド用）
+KAGGLE_COMPETITION = "playground-series-s6e2"
