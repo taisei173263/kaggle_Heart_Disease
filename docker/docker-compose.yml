@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: kaggle-s6e2-heart
+    container_name: kaggle-s6e2-heart
+    volumes:
+      # プロジェクト全体をマウント（大学サーバー binds 利用時はパスを要調整）
+      - ..:/workspace
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    # GPU 利用する場合（CUDA 環境がある場合）
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # GPU を使わない場合は上記 deploy ブロックをコメントアウトする

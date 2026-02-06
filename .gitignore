@@ -1,0 +1,42 @@
+# データ・モデル（GitHubに上げない／ディレクトリ構造は .gitkeep で保持）
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/output/*
+!data/output/.gitkeep
+models/*
+!models/.gitkeep
+*.csv
+*.pth
+*.pkl
+*.joblib
+*.feather
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.env
+.venv
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kaggle
+kaggle.json
