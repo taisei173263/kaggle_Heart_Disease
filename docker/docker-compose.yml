@@ -1,3 +1,8 @@
+# 実行方法: 必ずこのファイルがある docker/ ディレクトリで実行すること
+#   cd docker
+#   docker compose up -d --build
+# プロジェクトルートで docker compose すると context: .. 等が解決できず失敗する
+
 services:
   app:
     build:

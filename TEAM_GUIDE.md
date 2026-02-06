@@ -10,6 +10,8 @@
 
 #### 1-1. Docker環境の構築
 
+**必ず `docker` フォルダに移動してから実行すること。**
+
 ```bash
 cd ~/kaggle-s6e2-heart/docker
 docker compose build
@@ -67,6 +69,8 @@ docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
 **所要時間:** 1〜2分（ビルド不要）
 
 #### 2-4. コンテナの起動
+
+**必ず `docker` フォルダに移動してから起動すること。**
 
 ```bash
 cd docker

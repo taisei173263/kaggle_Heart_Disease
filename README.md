@@ -39,6 +39,25 @@ kaggle-s6e2-heart/
 
 ## 🚀 セットアップ（初回のみ）
 
+> **⚠️ 実行ディレクトリについて（必読）**
+>
+> `docker-compose.yml` は **`docker/` ディレクトリ内** にあり、ビルドコンテキストが `context: ..`（プロジェクトルート）になっています。
+>
+> **正しい起動手順:** 必ず **プロジェクトルートから `cd docker` してから** `docker compose` を実行してください。
+>
+> ```bash
+> # ✅ 正しい
+> cd ~/kaggle-s6e2-heart
+> cd docker
+> docker compose up -d --build
+> ```
+>
+> ```bash
+> # ❌ 間違い: プロジェクトルートでいきなり docker compose してもファイルが見つかりません
+> cd ~/kaggle-s6e2-heart
+> docker compose up -d   # 動かない
+> ```
+
 ### 前提条件
 
 - **サーバー環境:** Ubuntu 20.04以降
@@ -111,6 +130,8 @@ EOF
 
 #### 3-3. Dockerイメージのビルド
 
+**必ず `docker` フォルダに移動してから実行してください。**
+
 ```bash
 cd docker
 docker compose build
@@ -123,6 +144,8 @@ docker compose build
 ## 💻 日常の使い方
 
 ### JupyterLabの起動
+
+**必ず `docker` フォルダに移動してから起動すること。**
 
 ```bash
 cd ~/kaggle-s6e2-heart/docker
@@ -142,6 +165,8 @@ http://<サーバーのIPアドレス>:8888
 - トークン認証は無効化されています（学内サーバー想定）。外部公開する場合は `--NotebookApp.token=''` を削除してください。
 
 ### コンテナ内でbashを使う
+
+（`docker` フォルダで `docker compose up -d` した状態で）
 
 ```bash
 cd ~/kaggle-s6e2-heart/docker
@@ -165,7 +190,7 @@ python -c "import torch; print(torch.cuda.is_available())"
 ### コンテナの停止
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle-s6e2-heart/docker   # 必ず docker フォルダに移動
 docker compose down
 ```
 
@@ -400,7 +425,7 @@ docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
 docker images | grep kaggle-s6e2-heart
 ```
 
-これで `docker compose up` 時にビルドをスキップできます。
+これで `docker compose up` 時にビルドをスキップできます。（起動時は必ず `cd docker` してから `docker compose up -d` を実行すること）
 
 ---
 
