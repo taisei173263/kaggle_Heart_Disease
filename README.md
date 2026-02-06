@@ -28,7 +28,8 @@ kaggle-s6e2-heart/
 ├── src/                   # 共通コード（Notebookから import）
 ├── scripts/               # スクリプト
 │   ├── submit.sh          # Kaggle提出スクリプト
-│   ├── job.sh             # ジョブスクリプト（シンプル）
+│   ├── submit_job.sh      # SGEジョブ投入（Docker内で実行・推奨）
+│   ├── job.sh             # ジョブスクリプト（Docker外・uv run）
 │   ├── job_template.sh    # ジョブスクリプト（テンプレート）
 │   └── job_array.sh       # アレイジョブスクリプト
 ├── logs/                  # ジョブログ保存先
@@ -47,14 +48,14 @@ kaggle-s6e2-heart/
 >
 > ```bash
 > # ✅ 正しい
-> cd ~/kaggle-s6e2-heart
+> cd ~/kaggle/competitions/kaggle-s6e2-heart
 > cd docker
 > docker compose up -d --build
 > ```
 >
 > ```bash
 > # ❌ 間違い: プロジェクトルートでいきなり docker compose してもファイルが見つかりません
-> cd ~/kaggle-s6e2-heart
+> cd ~/kaggle/competitions/kaggle-s6e2-heart
 > docker compose up -d   # 動かない
 > ```
 
@@ -75,6 +76,13 @@ cd kaggle-s6e2-heart
 
 ### 2. Kaggle API認証の設定
 
+Kaggle API の認証方法は **2種類** あります。どちらか一方を設定すれば OK です。
+
+| 方法 | 用途 | 設定場所 |
+|------|------|----------|
+| **kaggle.json** | Docker コンテナ内で使用（推奨） | `~/.kaggle/kaggle.json` |
+| **KAGGLE_API_TOKEN** | ホストで `scripts/submit.sh` を使う場合 | `.env` ファイル |
+
 #### 2-1. Kaggle APIトークンの取得
 
 1. [Kaggle](https://www.kaggle.com/) にログイン
@@ -82,7 +90,7 @@ cd kaggle-s6e2-heart
 3. **Create New API Token** をクリック
 4. `kaggle.json` がダウンロードされる
 
-#### 2-2. kaggle.json の配置
+#### 2-2. kaggle.json の配置（Docker コンテナ用・推奨）
 
 **重要:** `kaggle.json` は個人の認証情報なので、**絶対にGitにコミットしない**こと。
 
@@ -103,6 +111,24 @@ chmod 600 ~/.kaggle/kaggle.json
 ls -la ~/.kaggle/
 # -rw------- 1 your_user your_group 68 Feb  6 12:00 kaggle.json
 ```
+
+**補足:** `docker-compose.yml` が `~/.kaggle` をコンテナ内にマウントするため、コンテナ内で `kaggle` コマンドが使えます。
+
+#### 2-3. KAGGLE_API_TOKEN の設定（ホストで submit.sh を使う場合）
+
+ホスト上で `scripts/submit.sh` を使う場合は、`.env` ファイルにトークンを設定します。
+
+```bash
+# kaggle.json を開いてトークンを確認
+cat ~/.kaggle/kaggle.json
+# {"username":"your_username","key":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
+
+# .env ファイルに設定（key の値を KGAT_ 形式に変換）
+# 注: 新しい形式は KGAT_ プレフィックス付き
+echo "KAGGLE_API_TOKEN=KGAT_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" >> .env
+```
+
+**注意:** `kaggle.json` と `KAGGLE_API_TOKEN` は別物です。`kaggle.json` の `key` をそのまま使う場合は `KGAT_` プレフィックスを付けてください。
 
 ### 3. Docker環境のビルド
 
@@ -148,7 +174,7 @@ docker compose build
 **必ず `docker` フォルダに移動してから起動すること。**
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose up -d
 ```
 
@@ -163,13 +189,14 @@ http://<サーバーのIPアドレス>:8888
 **注意:**
 - ポート `8888` が他の人と競合する場合は、`docker-compose.yml` の `ports` を変更してください（例: `"8889:8888"`）。
 - トークン認証は無効化されています（学内サーバー想定）。外部公開する場合は `--NotebookApp.token=''` を削除してください。
+- **SGE 環境でログインノードに GPU がない場合:** `could not select device driver nvidia` が出たら、下の「計算ノード（GPU付き）で JupyterLab を使う」に従って計算ノードで起動するか、[Q0](#q0-could-not-select-device-driver-nvidia-with-capabilities-gpu) のとおり `docker-compose.yml` の GPU 設定をコメントアウトして CPU のみで起動してください。
 
 ### コンテナ内でbashを使う
 
 （`docker` フォルダで `docker compose up -d` した状態で）
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose exec app bash
 ```
 
@@ -190,9 +217,60 @@ python -c "import torch; print(torch.cuda.is_available())"
 ### コンテナの停止
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker   # 必ず docker フォルダに移動
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker   # 必ず docker フォルダに移動
 docker compose down
 ```
+
+---
+
+### 計算ノード（GPU付き）で JupyterLab を使う（SGE 環境）
+
+ログインノード（`ln1` 等）では GPU が使えず `could not select device driver nvidia` が出る場合、**計算ノードに入ってから** Docker を起動します。手元のPCからは SSH トンネルで JupyterLab にアクセスします。
+
+#### ステップ1: 計算ノードに接続（GPU を確保）
+
+```bash
+# 例: tsmall キューで GPU 1 枚・メモリ 16GB を確保
+qrsh -q tsmall -l gpu=1 -l mem_req=16g -l h_vmem=16g
+```
+
+プロンプトが `tn4` 等の**計算ノード名**に変わったら成功です。`nvidia-smi` で GPU を確認できます。
+
+#### ステップ2: 作業ディレクトリに移動して Docker を起動
+
+```bash
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
+docker compose up
+```
+
+**このターミナルは閉じずにそのままにしてください。** ログの最後に `http://127.0.0.1:8888/lab?token=...` のような URL が出れば起動成功です。
+
+**補足:** ログインノード用に GPU 設定をコメントアウトしている場合は、先に以下で GPU を有効にしてください。
+
+```bash
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
+sed -i 's/^ *# *deploy:/    deploy:/' docker-compose.yml
+sed -i 's/^ *# *resources:/      resources:/' docker-compose.yml
+sed -i 's/^ *# *reservations:/        reservations:/' docker-compose.yml
+sed -i 's/^ *# *devices:/          devices:/' docker-compose.yml
+sed -i 's/^ *# *- driver: nvidia/            - driver: nvidia/' docker-compose.yml
+sed -i 's/^ *# *count: all/              count: all/' docker-compose.yml
+sed -i 's/^ *# *capabilities: \[gpu\]/              capabilities: [gpu]/' docker-compose.yml
+```
+
+#### ステップ3: 手元のPCから SSH トンネルを張る
+
+**手元のPC（Mac/Windows）** で新しいターミナルを開き、以下を実行します。`tn4` はステップ1で入った計算ノード名、`ln1` 等は普段 SSH するログインノードのホスト名またはIPに合わせてください。
+
+```bash
+ssh -L 8888:tn4:8888 taisei@ln1のホスト名またはIP
+```
+
+#### ステップ4: ブラウザでアクセス
+
+手元のブラウザで **http://localhost:8888** を開きます。JupyterLab の画面が表示されれば完了です。
+
+**まとめ:** 計算ノードで `docker compose up` → 手元で `ssh -L 8888:計算ノード名:8888 ユーザー@ログインノード` → ブラウザで http://localhost:8888
 
 ---
 
@@ -203,7 +281,7 @@ docker compose down
 プロジェクト内の `data/raw/` に配置:
 
 ```bash
-cd ~/kaggle-s6e2-heart
+cd ~/kaggle/competitions/kaggle-s6e2-heart
 kaggle competitions download -c playground-series-s6e2
 unzip playground-series-s6e2.zip -d data/raw/
 ```
@@ -273,14 +351,14 @@ git push origin main
 ### 方法1: スクリプトから提出
 
 ```bash
-cd ~/kaggle-s6e2-heart
+cd ~/kaggle/competitions/kaggle-s6e2-heart
 ./scripts/submit.sh data/output/submission.csv "XGBoost v1 with feature engineering"
 ```
 
 ### 方法2: Kaggle CLIから直接提出
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose exec app bash
 
 # コンテナ内で
@@ -295,17 +373,30 @@ kaggle competitions submit -c playground-series-s6e2 \
 
 サーバーでSun Grid Engine（SGE）を使っている場合、ジョブスクリプトで学習を投入できます。
 
+### スクリプトの種類
+
+| スクリプト | 実行環境 | 用途 |
+|-----------|----------|------|
+| **`submit_job.sh`** | Docker コンテナ内 | **推奨。** チーム共通の Docker 環境で実行 |
+| `job.sh` 等 | ホスト直接（uv run） | uv がホストにある場合のみ |
+
+**初心者には `submit_job.sh` を推奨します。** Docker 環境を使うことで、依存関係の問題を防げます。
+
 ### 基本的な使い方
 
 ```bash
-# ジョブを投入
+# 計算ノードの Docker 内で 1 回だけコマンド実行（推奨・PC を閉じても継続）
+mkdir -p logs
+qsub scripts/submit_job.sh src/train.py --epochs 10
+
+# または従来のジョブ投入
 qsub scripts/job.sh
 
 # ジョブの状態確認
 qstat
 
 # ログをリアルタイム表示
-tail -f logs/job_12345.out
+tail -f logs/kaggle-run.o12345
 ```
 
 ### カスタムジョブの作成
@@ -333,6 +424,16 @@ qsub scripts/job_array.sh
 ---
 
 ## 🔧 トラブルシューティング
+
+### Q0. `could not select device driver "nvidia" with capabilities: [[gpu]]`
+
+**原因:** ログインノード等、GPU や NVIDIA Container Toolkit がない環境で `docker compose up` している。
+
+**解決策（2通り）:**
+
+1. **GPU を使う（推奨）:** [計算ノード（GPU付き）で JupyterLab を使う](#計算ノードgpu付きで-jupyterlab-を使うsge-環境) に従い、`qrsh` で計算ノード（例: tn4）に入ってから `cd docker` → `docker compose up` し、手元のPCで `ssh -L 8888:tn4:8888 ユーザー@ln1` でトンネルを張り、ブラウザで http://localhost:8888 にアクセスする。
+
+2. **CPU のみで使う:** `docker/docker-compose.yml` の `deploy:` 〜 `capabilities: [gpu]` のブロックをコメントアウト（各行の先頭に `#` を付ける）すると、GPU なしで起動します。
 
 ### Q1. `kaggle.json` が見つからないエラー
 
@@ -408,7 +509,7 @@ Docker Hubを使わず、サーバー内でイメージを共有する方法。
 ### イメージのエクスポート（管理者が実行）
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose build
 
 # イメージを tar ファイルに保存

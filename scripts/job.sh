@@ -5,8 +5,14 @@
 #$ -l h_vmem=16g
 #$ -l gpu=1
 
-# Kaggle S6E2 Heart - ジョブスクリプト
+# Kaggle S6E2 Heart - ジョブスクリプト（ホスト直接実行版）
 # 使い方: qsub scripts/job.sh
+#
+# ⚠️ 注意: このスクリプトは Docker を使わず、ホスト上で直接 uv run を実行します。
+#          uv がホストにインストールされている必要があります。
+#
+# 💡 推奨: Docker 環境を使う場合は scripts/submit_job.sh を使ってください。
+#          qsub scripts/submit_job.sh src/train.py --epochs 10
 
 # ジョブ情報の出力
 echo "=========================================="

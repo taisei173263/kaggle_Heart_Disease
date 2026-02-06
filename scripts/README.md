@@ -24,11 +24,21 @@
 
 | ファイル | 用途 |
 |---------|------|
+| **`submit_job.sh`** | **計算ノードで Docker 内コマンドを1回実行**（推奨・汎用） |
 | `job.sh` | シンプルなジョブスクリプト（main.py実行） |
 | `job_template.sh` | カスタマイズ用テンプレート（詳細なコメント付き） |
 | `job_array.sh` | アレイジョブ（複数パラメータの並列実行） |
 
-**使い方:**
+**submit_job.sh の使い方（Login ノードから投入）:**
+
+```bash
+# プロジェクトルートで実行。計算ノードの Docker 内で train.py が動く
+qsub scripts/submit_job.sh src/train.py --epochs 10
+qsub scripts/submit_job.sh src/train.py
+qsub -N my-exp scripts/submit_job.sh src/train.py --config configs/exp1.yaml
+```
+
+**その他のジョブスクリプト:**
 
 ```bash
 # 基本的な投入
@@ -59,17 +69,18 @@ qsub scripts/job_array.sh
 kaggle competitions submissions -c playground-series-s6e2
 ```
 
-### ジョブ投入
+### ジョブ投入（Docker 内で学習を回す）
 
 ```bash
-# ジョブ投入
-qsub scripts/job.sh
+# 計算ノードの Docker 内で 1 回だけコマンド実行（PC を閉じても継続）
+qsub scripts/submit_job.sh src/train.py --epochs 10
 
 # ジョブ確認
 qstat
 
-# ログ確認
-tail -f logs/job_12345.out
+# ログ確認（ジョブ名はデフォルト kaggle-run）
+tail -f logs/kaggle-run.o12345
+tail -f logs/kaggle-run.e12345
 
 # ジョブ削除
 qdel 12345

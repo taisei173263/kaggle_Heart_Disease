@@ -14,7 +14,9 @@ docker/
 ├── Dockerfile           # イメージ定義（PyTorch + GPU + 日本語対応）
 ├── docker-compose.yml   # コンテナ起動設定
 ├── requirements.txt     # Python依存パッケージ
-└── README_DOCKER.md     # このファイル
+├── README_DOCKER.md     # このファイル
+├── setup_check.sh       # 環境の事前確認スクリプト
+└── quick_start.sh       # ワンコマンドセットアップスクリプト
 ```
 
 ---
@@ -38,9 +40,12 @@ docker/
 # 日本語フォントのインストール
 RUN apt-get install -y fonts-ipaexfont fonts-ipafont
 
-# matplotlibで日本語を使えるように設定
-RUN echo "font.family : IPAexGothic" > /root/.config/matplotlib/matplotlibrc
+# matplotlibで日本語を使えるように設定（システム全体）
+RUN mkdir -p /etc/matplotlib && \
+    echo "font.family : IPAexGothic" > /etc/matplotlib/matplotlibrc
 ```
+
+**ポイント:** `/etc/matplotlib/matplotlibrc` に設定することで、root 以外のユーザー（kaggle）でも日本語フォントが有効になります。
 
 これにより、以下が可能になります:
 
@@ -110,6 +115,8 @@ deploy:
 docker compose exec app nvidia-smi
 docker compose exec app python -c "import torch; print(torch.cuda.is_available())"
 ```
+
+**SGE 環境（計算ノードで使う場合）:** ログインノードには GPU がないため、`qrsh -q tsmall -l gpu=1 -l mem_req=16g -l h_vmem=16g` で計算ノード（例: tn4）に入り、そこで `cd docker` → `docker compose up` する。手元のPCからは `ssh -L 8888:tn4:8888 ユーザー@ln1` でトンネルを張り、ブラウザで http://localhost:8888 にアクセス。詳細は README の「計算ノード（GPU付き）で JupyterLab を使う」を参照。
 
 ### JupyterLab自動起動
 

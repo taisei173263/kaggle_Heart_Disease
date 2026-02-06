@@ -51,7 +51,8 @@ services:
     stdin_open: true
     tty: true
     
-    # GPU利用設定（NVIDIA Container Toolkit必須）
+    # GPU利用設定（NVIDIA Container Toolkit 必須）
+    # ログインノード等で "could not select device driver nvidia" が出る場合はコメントアウトしてCPUのみで起動
     deploy:
       resources:
         reservations:

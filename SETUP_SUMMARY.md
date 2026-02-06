@@ -30,6 +30,10 @@
 | `docker/setup_check.sh` | 環境の事前確認（Docker・GPU・kaggle.json等） |
 | `docker/quick_start.sh` | ワンコマンドセットアップ |
 | `scripts/submit.sh` | Kaggleへの提出 |
+| `scripts/submit_job.sh` | SGEジョブ投入（Docker内で実行・推奨） |
+| `scripts/job.sh` | シンプルなジョブスクリプト（Docker外・uv run） |
+| `scripts/job_template.sh` | カスタマイズ用テンプレート |
+| `scripts/job_array.sh` | アレイジョブ（複数パラメータ並列実行） |
 
 ### 4. 設定ファイル
 
@@ -148,7 +152,11 @@ kaggle-s6e2-heart/
 │   └── utils.py
 │
 ├── scripts/                     # ユーティリティスクリプト
-│   └── submit.sh                # Kaggle提出スクリプト
+│   ├── submit.sh                # Kaggle提出スクリプト
+│   ├── submit_job.sh            # SGEジョブ投入（Docker内で実行）
+│   ├── job.sh                   # シンプルなジョブスクリプト
+│   ├── job_template.sh          # カスタマイズ用テンプレート
+│   └── job_array.sh             # アレイジョブ
 │
 └── models/                      # 学習済みモデル（Git管理外）
 ```
@@ -274,12 +282,13 @@ command: bash
 
 ### 日常の開発時
 
-- [ ] `docker compose up -d` でコンテナ起動
+- [ ] `cd docker && docker compose up -d` でコンテナ起動
 - [ ] JupyterLab または bash で作業
 - [ ] 共通コードは `src/` に配置
 - [ ] Git で変更をコミット・プッシュ
-- [ ] 提出は `./scripts/submit.sh` を使用
-- [ ] 作業終了後は `docker compose down`
+- [ ] 学習ジョブは `qsub scripts/submit_job.sh src/train.py` で投入
+- [ ] 提出は Docker 内で `kaggle competitions submit` または `./scripts/submit.sh` を使用
+- [ ] 作業終了後は `cd docker && docker compose down`
 
 ---
 

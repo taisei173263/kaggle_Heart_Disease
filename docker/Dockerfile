@@ -26,8 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # matplotlib日本語フォント設定（IPAexゴシックを使用）
-RUN mkdir -p /root/.config/matplotlib && \
-    echo "font.family : IPAexGothic" > /root/.config/matplotlib/matplotlibrc
+# システム全体の設定として /etc/matplotlib に配置（全ユーザーで有効）
+RUN mkdir -p /etc/matplotlib && \
+    echo "font.family : IPAexGothic" > /etc/matplotlib/matplotlibrc && \
+    # フォントキャッシュをクリア（初回起動時の再構築を促す）
+    rm -rf /root/.cache/matplotlib
 
 # Python依存関係のインストール
 COPY docker/requirements.txt /tmp/requirements.txt

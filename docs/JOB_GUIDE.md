@@ -6,11 +6,72 @@
 
 ## 📁 ジョブスクリプト一覧
 
-| ファイル | 用途 |
-|---------|------|
-| `scripts/job.sh` | シンプルなジョブスクリプト（main.py実行） |
-| `scripts/job_template.sh` | カスタマイズ用テンプレート（詳細なコメント付き） |
-| `scripts/job_array.sh` | アレイジョブ（複数パラメータの並列実行） |
+| ファイル | 用途 | 実行環境 |
+|---------|------|----------|
+| **`scripts/submit_job.sh`** | **計算ノードで Docker 内コマンドを 1 回実行**（推奨） | Docker コンテナ内 |
+| `scripts/job.sh` | シンプルなジョブスクリプト（main.py実行） | ホスト直接（uv run） |
+| `scripts/job_template.sh` | カスタマイズ用テンプレート（詳細なコメント付き） | ホスト直接（uv run） |
+| `scripts/job_array.sh` | アレイジョブ（複数パラメータの並列実行） | ホスト直接（uv run） |
+
+### ⚠️ 重要: Docker 内 vs ホスト直接実行の違い
+
+- **`submit_job.sh`（推奨）**: `docker compose run` で Docker コンテナ内で実行。環境が統一され、依存関係の問題が起きにくい。
+- **`job.sh` / `job_template.sh` / `job_array.sh`**: ホスト上で直接 `uv run python` を実行。uv や Python がホストにインストールされている必要がある。
+
+**初心者には `submit_job.sh` を推奨します。** Docker 環境を使うことで、チーム全員が同じ環境で実行でき、「自分の環境では動くのに…」という問題を防げます。
+
+---
+
+## 🐳 submit_job.sh（Docker 内で学習ジョブを回す）
+
+Login ノードから計算ノード（GPU）にジョブを投げ、**Docker コンテナ内で** `train.py` などを 1 回だけ実行するための汎用スクリプトです。PC を閉じても学習は継続します。
+
+### なぜ `docker compose run` で `up` ではないのか
+
+- **`up`**: コンテナを常駐させ、JupyterLab のようにずっと起動しておく用途向け。ジョブで「1 回だけ処理して終了」するには向かない。
+- **`run`**: 指定したコマンドを 1 回だけ実行し、終了したらコンテナを自動削除（`--rm`）する。学習ジョブのように「投げたら終わる」タスクに最適で、ゴミを残しません。
+
+### コマンド例（プロジェクトルートで実行）
+
+```bash
+# 初回のみ logs ディレクトリを作成（SGE がログを書き込むため）
+mkdir -p logs
+
+# 学習を 1 回実行（第1引数が .py の場合は先頭に python が付く）
+qsub scripts/submit_job.sh src/train.py --epochs 10
+
+# 引数なしで実行
+qsub scripts/submit_job.sh src/train.py
+
+# ジョブ名を付けて投入
+qsub -N xgb-v1 scripts/submit_job.sh src/train.py --model xgboost
+
+# 設定ファイルを渡す
+qsub -N exp1 scripts/submit_job.sh src/train.py --config configs/exp1.yaml
+
+# python を明示する書き方
+qsub scripts/submit_job.sh python src/train.py --epochs 10
+
+# ワンライナーを実行
+qsub scripts/submit_job.sh python -c "print(1+1)"
+```
+
+### ログの確認
+
+```bash
+# 標準出力・標準エラーは logs/ に保存される（ジョブ名はデフォルト kaggle-run）
+qstat
+tail -f logs/kaggle-run.o12345
+tail -f logs/kaggle-run.e12345
+```
+
+### リソース（デフォルト）
+
+- キュー: `tsmall`
+- GPU: 1 枚
+- メモリ: 16GB
+
+変更する場合は `qsub` のオプションで上書きできます（例: `qsub -l gpu=2 -l mem_req=32g scripts/submit_job.sh src/train.py`）。
 
 ---
 
@@ -19,7 +80,7 @@
 ### 1. シンプルなジョブ投入
 
 ```bash
-cd ~/kaggle-s6e2-heart
+cd ~/kaggle/competitions/kaggle-s6e2-heart
 qsub scripts/job.sh
 ```
 

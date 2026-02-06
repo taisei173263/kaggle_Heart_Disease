@@ -13,7 +13,7 @@
 **必ず `docker` フォルダに移動してから実行すること。**
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose build
 ```
 
@@ -98,7 +98,7 @@ git push origin main
 #### Step 2: イメージの再ビルド（管理者）
 
 ```bash
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose build --no-cache
 docker save kaggle-s6e2-heart:latest | gzip > /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
 ```
@@ -119,7 +119,7 @@ Slackやメールで:
 #### Step 4: メンバーの更新作業
 
 ```bash
-cd ~/kaggle-s6e2-heart
+cd ~/kaggle/competitions/kaggle-s6e2-heart
 git pull origin main
 docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
 cd docker
@@ -168,7 +168,7 @@ cat .gitignore | grep .env
 各メンバーに `.env` ファイルを作成してもらう:
 
 ```bash
-cd ~/kaggle-s6e2-heart
+cd ~/kaggle/competitions/kaggle-s6e2-heart
 cat << EOF > .env
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
@@ -383,7 +383,7 @@ kaggle competitions submissions -c playground-series-s6e2 | head -5
 
 ```bash
 # コンテナの停止・削除
-cd ~/kaggle-s6e2-heart/docker
+cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose down
 
 # イメージの削除（任意）
