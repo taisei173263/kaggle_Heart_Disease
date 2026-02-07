@@ -1,5 +1,7 @@
 #!/bin/bash
 #$ -cwd
+#$ -o /dev/null
+#$ -e /dev/null
 #$ -q tsmall
 #$ -l mem_req=16g
 #$ -l h_vmem=16g

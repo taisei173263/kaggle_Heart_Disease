@@ -30,10 +30,10 @@ docker/
 - **全てのライブラリがプリインストール済み**:
   - データ処理: pandas, numpy, polars
   - 可視化: matplotlib, seaborn, plotly
-  - 機械学習: scikit-learn, xgboost, lightgbm (GPU版), catboost
+  - 機械学習: scikit-learn, xgboost (GPU版), lightgbm (CPU版), catboost (GPU版)
   - ディープラーニング: PyTorch, TensorFlow (両方 GPU 対応)
   - その他: optuna, JupyterLab, RAPIDS など
-- **GPU 対応**: LightGBM, XGBoost, CatBoost 全て GPU 版が含まれる
+- **GPU 対応**: XGBoost, CatBoost, PyTorch, TensorFlow は GPU 版が含まれる（LightGBM は CPU 版）
 - **バージョン管理不要**: Kaggle が管理しているため、常に最新の安定版
 
 **トレードオフ:**

@@ -22,9 +22,9 @@ TARGET_COL = "Heart Disease"  # コンペの列名（スペースあり）
 N_FOLDS = 5
 SEED = 42
 
-# LightGBM のデバイス: Kaggle公式イメージの LightGBM は GPU 対応済み
-# デフォルトで "cuda" を使用（CPU で動かす場合は環境変数 LGBM_DEVICE=cpu を設定）
-LGBM_DEVICE = os.environ.get("LGBM_DEVICE", "cuda")  # "cuda"（GPU・デフォルト） | "cpu"
+# LightGBM のデバイス: Kaggle公式イメージの LightGBM は CPU 版のためデフォルトは "cpu"
+# GPU で GBDT を使う場合は CatBoost / XGBoost を検討（公式イメージで GPU 対応済み）
+LGBM_DEVICE = os.environ.get("LGBM_DEVICE", "cpu")  # "cpu"（デフォルト） | "cuda"（CUDA版ビルド時のみ）
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -64,11 +64,10 @@ def train():
             "boosting_type": "gbdt",
             "n_estimators": 1000,
             "learning_rate": 0.05,
-            "device": LGBM_DEVICE,  # "cuda" でGPU使用（Dockerfile でCUDA版ビルド済み）
+            "device": LGBM_DEVICE,  # 公式イメージは CPU 版のため "cpu" で運用
             "verbose": -1,
             "random_state": SEED,
         }
-        # CUDA版では gpu_platform_id / gpu_device_id は不要（OpenCL版のみで使用）
 
         model = lgb.LGBMClassifier(**params)
 

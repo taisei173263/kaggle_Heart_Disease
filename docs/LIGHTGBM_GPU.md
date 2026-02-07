@@ -83,37 +83,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ## 現在の実装状態
 
-### ✅ 対応済み: Kaggle公式イメージを使用
+### ⚠️ 現状: LightGBM は CPU で運用中
 
 - **Dockerfile** で **Kaggle公式イメージ (`gcr.io/kaggle-images/python`)** をベースに使用。
-- Kaggle公式イメージには **LightGBM GPU 版がプリインストール済み** のため、ソースビルド不要。
-- **`src/train.py`** はデフォルトで **`device='cuda'`** を使用（環境変数 `LGBM_DEVICE=cpu` で CPU に切替可能）。
+- Kaggle公式イメージの LightGBM は **CPU 版** のため、`device='cuda'` や `device='gpu'` を指定するとエラーになる。
+- **`src/train.py`** はデフォルトで **`device='cpu'`** を使用。
+
+### GPU で GBDT を使いたい場合
+
+LightGBM の GPU 版が必要な場合は、以下の選択肢があります:
+
+1. **CatBoost / XGBoost を使う（推奨）**: Kaggle公式イメージには GPU 対応版がプリインストール済み
+2. **LightGBM を CUDA 版でソースビルド**: 上記「方法2」を参照（Dockerfile の変更が必要）
 
 ### 使い方
 
-**GPU で学習（デフォルト）:**
+**CPU で学習（デフォルト）:**
 
 ```bash
 qsub scripts/submit_job.sh src/train.py
 ```
 
-**CPU で学習（環境変数で切替）:**
+**環境変数で明示的に指定:**
 
 ```bash
-# docker-compose.yml の environment に追加するか、ジョブスクリプト内で export
+# LGBM_DEVICE 環境変数で切替可能（デフォルトは cpu）
 export LGBM_DEVICE=cpu
 qsub scripts/submit_job.sh src/train.py
 ```
 
-### ビルド後の確認
+### 補足
 
-ジョブのログに次のような表示が出れば、CUDA 版が動作しています:
-
-```
-[LightGBM] [Info] This is the GPU trainer!!
-[LightGBM] [Info] Total Bins 3393
-[LightGBM] [Info] Number of data points in the train set: 504000, number of used features: 13
-```
+- LightGBM は CPU でも十分高速であり、このコンペのデータサイズであれば問題なく動作します。
+- GPU を活用したい場合は、PyTorch / TensorFlow によるニューラルネットワークや、CatBoost / XGBoost の GPU 版を検討してください。
 
 ## 参考リンク
 

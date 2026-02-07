@@ -20,7 +20,8 @@ kaggle-s6e2-heart/
 │   └── quick_start.sh
 ├── docs/                  # ドキュメント
 │   ├── JOB_GUIDE.md       # ジョブスクリプト使用ガイド
-│   └── LIGHTGBM_GPU.md    # LightGBM を GPU で動かすための現状まとめ
+│   ├── LIGHTGBM_GPU.md    # LightGBM GPU 関連情報
+│   └── WORKFLOW_GUIDE.md  # Kaggle コンペの進め方ガイド
 ├── data/
 │   ├── raw/               # KaggleからDLした元データ (train.csv, test.csv)
 │   ├── processed/         # 前処理済みデータ (feather/parquet)
@@ -170,6 +171,10 @@ docker compose build --no-cache
 - LightGBM, XGBoost, CatBoost, PyTorch, TensorFlow など、全て GPU 対応版が含まれています
 
 **補足:** Kaggle Notebook と完全に同じ環境が手に入るため、ローカルでの実験結果がそのまま Kaggle に反映されます。
+
+**ビルド後の確認:**
+- **イメージが 40GB 超:** Kaggle 公式環境（PyTorch / TensorFlow / GPU 版 LightGBM 等）がすべて入っている証拠です。
+- **ログインノードで `could not select device driver "nvidia"`:** ログインノードに GPU がないための正常な反応です。学習は `qsub scripts/submit_job.sh src/train.py` で計算ノードに投げれば GPU が使われます（[Q0](#q0-could-not-select-device-driver-nvidia-with-capabilities-gpu) も参照）。
 
 ---
 
@@ -415,11 +420,28 @@ tail -20 logs/kaggle-run.o<ジョブID>
 
 **ベースライン学習（初回提出用）**
 
-```bash
-# LightGBM 5-fold CV で学習し、~/kaggle_data/outputs/submission_v1.csv を生成
-qsub scripts/submit_job.sh src/train.py
+Docker イメージのビルドが終わったら、GPU のある計算ノードにジョブを投げるだけです。
 
-# 終了後、提出ファイルをプロジェクトの data/output にコピーして提出
+```bash
+# プロジェクトルートで実行（計算ノードに注文を出す）
+mkdir -p logs
+qsub scripts/submit_job.sh src/train.py
+```
+
+**動作確認の流れ:**
+
+1. **状況確認:** `qstat` で `r` (Running) になっていれば、計算ノードで Docker が立ち上がり学習が走っています。
+2. **ログ確認:** 終了後、`logs/kaggle-run.o<ジョブID>` を確認。`[LightGBM] [Info] This is the GPU trainer!!` が出ていれば GPU 学習の成功です。
+
+```bash
+qstat
+cat logs/kaggle-run.o*   # または tail -100 logs/kaggle-run.o<ジョブID>
+```
+
+**提出まで:**
+
+```bash
+# 提出ファイルをプロジェクトの data/output にコピーして提出
 cp ~/kaggle_data/outputs/submission_v1.csv data/output/
 ./scripts/submit.sh data/output/submission_v1.csv "LightGBM baseline v1"
 ```
@@ -462,7 +484,9 @@ qsub scripts/job_array.sh
 
 **詳細:** `docs/JOB_GUIDE.md` を参照
 
-**LightGBM を GPU で使いたい場合:** 現状 pip の LightGBM は OpenCL 前提のため `No OpenCL device found` になります。CUDA 版のビルド手順や OpenCL の入れ方は `docs/LIGHTGBM_GPU.md` を参照してください。
+**LightGBM について:** Kaggle公式イメージの LightGBM は CPU 版のため、GPU で GBDT を使いたい場合は XGBoost や CatBoost を検討してください。詳細は `docs/LIGHTGBM_GPU.md` を参照。
+
+**Kaggle コンペの進め方:** 環境構築後の開発フロー（EDA → 特徴量エンジニアリング → モデル改善 → アンサンブル）については `docs/WORKFLOW_GUIDE.md` を参照してください。
 
 ---
 

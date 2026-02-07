@@ -19,14 +19,16 @@ docker compose build
 
 **所要時間:** 10〜15分（PyTorchイメージのダウンロード + ライブラリインストール）
 
-#### 1-2. イメージの共有ストレージへの保存
+#### 1-2. イメージの共有ストレージへの保存（オプション）
+
+共有ストレージがある場合の例です。なければ各人が `docker compose build` で構築します。
 
 ```bash
-# イメージをtar.gzに保存
-docker save kaggle-s6e2-heart:latest | gzip > /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# イメージをtar.gzに保存（パスは環境に合わせて変更）
+docker save kaggle-s6e2-heart:latest | gzip > /path/to/shared/kaggle-s6e2-heart.tar.gz
 
-# サイズ確認（約3〜4GB）
-ls -lh /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# サイズ確認（Kaggle公式イメージは約15〜20GB圧縮後）
+ls -lh /path/to/shared/kaggle-s6e2-heart.tar.gz
 ```
 
 #### 1-3. READMEの共有
@@ -60,13 +62,18 @@ cd kaggle-s6e2-heart
 ⚠ kaggle-s6e2-heart イメージが見つかりません
 ```
 
-#### 2-3. イメージのロード
+#### 2-3. イメージのロード（共有イメージがある場合）
 
 ```bash
-docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# 共有イメージがある場合（パスは環境に合わせて変更）
+docker load < /path/to/shared/kaggle-s6e2-heart.tar.gz
+
+# または、ローカルでビルド（30分〜1時間）
+cd docker
+docker compose build --no-cache
 ```
 
-**所要時間:** 1〜2分（ビルド不要）
+**所要時間:** ロードは5〜10分、ビルドは30分〜1時間
 
 #### 2-4. コンテナの起動
 
@@ -112,7 +119,7 @@ Slackやメールで:
 - transformers を追加
 - 更新手順:
   1. git pull origin main
-  2. docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+  2. cd docker && docker compose build --no-cache
   3. docker compose down && docker compose up -d
 ```
 
@@ -121,8 +128,8 @@ Slackやメールで:
 ```bash
 cd ~/kaggle/competitions/kaggle-s6e2-heart
 git pull origin main
-docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
 cd docker
+docker compose build --no-cache
 docker compose down
 docker compose up -d
 ```
@@ -243,20 +250,22 @@ df -h /data1/share/kaggle-zemi
 
 ### ディレクトリ構成
 
+現在は各ユーザーのホームディレクトリ `~/kaggle_data` を使用しています（Plan B）。
+
 ```
-/data1/share/kaggle-zemi/
-├── kaggle-s6e2-heart.tar.gz       # Dockerイメージ
+~/kaggle_data/                     # 各ユーザーのホーム配下
 ├── datasets/
-│   ├── train.csv                  # 元データ（全員共通）
-│   ├── test.csv
-│   └── sample_submission.csv
-├── models/
-│   ├── 20260206_taisei_xgboost/   # 個人のモデル
-│   ├── 20260207_hanako_lgbm/
-│   └── ensemble/                  # アンサンブル用
-└── submissions/
-    ├── taisei_v1.csv
-    └── hanako_v2.csv
+│   └── raw/
+│       ├── train.csv              # 元データ
+│       ├── test.csv
+│       └── sample_submission.csv
+├── processed/                     # 前処理済みデータ
+├── models/                        # 学習済みモデル
+│   ├── lgbm_fold1.txt
+│   └── lgbm_fold2.txt
+├── outputs/                       # 提出ファイル
+│   └── submission_v1.csv
+└── working/                       # 一時ファイル
 ```
 
 ### 命名規則

@@ -20,6 +20,8 @@
 #$ -S /bin/bash
 #$ -cwd
 #$ -V
+#$ -o /dev/null
+#$ -e /dev/null
 #$ -q tsmall
 #$ -l gpu=1
 #$ -l mem_req=16g
@@ -39,7 +41,8 @@ else
 fi
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
-# ログをプロジェクトの logs/ に出力（計算ノードで -o/-e の相対パスがスプール配下になり権限エラーになるため）
+# ログはすべて logs/ に出力（下の exec でリダイレクト）
+# -o /dev/null -e /dev/null: SGE のデフォルト出力を無効化し、ルートに .o*/.e* が作られないようにする
 LOGDIR="$PROJECT_ROOT/logs"
 mkdir -p "$LOGDIR"
 if [ -n "${JOB_ID:-}" ]; then

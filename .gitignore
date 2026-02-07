@@ -41,7 +41,14 @@ Thumbs.db
 # Kaggle
 kaggle.json
 
-# Logs
+# Logs（ジョブログは logs/ に集約）
 logs/*
 !logs/.gitkeep
 *.log
+# SGE がルートに作った場合用（通常は logs/ に出力）
+kaggle-run.o*
+kaggle-run.e*
+lgbm-baseline.o*
+lgbm-baseline.e*
+job-uv.o*
+job-uv.e*

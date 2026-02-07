@@ -1,12 +1,12 @@
 #!/bin/bash
 #$ -cwd
+#$ -o /dev/null
+#$ -e /dev/null
 #$ -q tsmall
 #$ -l mem_req=16g
 #$ -l h_vmem=16g
 #$ -l gpu=1
 #$ -N kaggle-array
-#$ -o logs/array_$TASK_ID.out
-#$ -e logs/array_$TASK_ID.err
 #$ -t 1-5
 
 # ========================================
@@ -26,8 +26,21 @@
 #
 # ========================================
 
-# ログディレクトリの作成
-mkdir -p logs
+# プロジェクトルート（投入元ディレクトリ）
+if [ -n "${SGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$SGE_O_WORKDIR"
+elif [ -n "${UGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$UGE_O_WORKDIR"
+else
+    PROJECT_ROOT="$(pwd)"
+fi
+
+# ログをプロジェクトの logs/ に出力
+LOGDIR="$PROJECT_ROOT/logs"
+mkdir -p "$LOGDIR"
+if [ -n "${JOB_ID:-}" ] && [ -n "${SGE_TASK_ID:-}" ]; then
+    exec >> "$LOGDIR/kaggle-array.o${JOB_ID}.${SGE_TASK_ID}" 2>> "$LOGDIR/kaggle-array.e${JOB_ID}.${SGE_TASK_ID}"
+fi
 
 echo "=========================================="
 echo "Array Job ID: $JOB_ID"
