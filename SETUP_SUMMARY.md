@@ -95,11 +95,11 @@ cd kaggle-s6e2-heart
 - **設定方法:** `.env` ファイルに `USER_ID` / `GROUP_ID` を記載
 - **効果:** コンテナ内で作成したファイルが root 権限にならない
 
-### 4. 共有ストレージ
+### 4. データ置き場
 
-- **ホスト:** `/data1/share/kaggle-zemi`
+- **ホスト:** `~/kaggle_data`（各ユーザーのホーム配下）
 - **コンテナ内:** `/data`
-- **用途:** チーム全体でデータ・モデル・イメージを共有
+- **用途:** データ・モデル・出力の保存（初回に `mkdir -p ~/kaggle_data/{datasets/raw,processed,models,outputs,working}` と `chmod -R 777 ~/kaggle_data` で作成）
 
 ### 5. Kaggle API認証
 

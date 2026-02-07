@@ -396,12 +396,24 @@ kaggle competitions submit -c playground-series-s6e2 \
 
 ### 基本的な使い方
 
+**初回のみ: 環境チェック（疎通確認）**
+
+```bash
+# データ・GPU・書き込みの疎通を確認
+mkdir -p logs
+qsub scripts/submit_job.sh src/check_env.py
+
+# ジョブ終了後、結果を確認（✅ が3つ出ればOK）
+tail -20 logs/kaggle-run.o<ジョブID>
+```
+
+**学習ジョブの投入**
+
 ```bash
 # 計算ノードの Docker 内で 1 回だけコマンド実行（推奨・PC を閉じても継続）
-mkdir -p logs
 qsub scripts/submit_job.sh src/train.py --epochs 10
 
-# または従来のジョブ投入
+# または従来のジョブ投入（ホストで uv run）
 qsub scripts/job.sh
 
 # ジョブの状態確認

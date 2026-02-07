@@ -4,6 +4,7 @@
 #$ -l mem_req=16g
 #$ -l h_vmem=16g
 #$ -l gpu=1
+#$ -N job-uv
 
 # Kaggle S6E2 Heart - ジョブスクリプト（ホスト直接実行版）
 # 使い方: qsub scripts/job.sh
@@ -13,6 +14,22 @@
 #
 # 💡 推奨: Docker 環境を使う場合は scripts/submit_job.sh を使ってください。
 #          qsub scripts/submit_job.sh src/train.py --epochs 10
+
+# プロジェクトルート（投入元ディレクトリ）
+if [ -n "${SGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$SGE_O_WORKDIR"
+elif [ -n "${UGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$UGE_O_WORKDIR"
+else
+    PROJECT_ROOT="$(pwd)"
+fi
+
+# ログをプロジェクトの logs/ に出力
+LOGDIR="$PROJECT_ROOT/logs"
+mkdir -p "$LOGDIR"
+if [ -n "${JOB_ID:-}" ]; then
+    exec >> "$LOGDIR/job-uv.o$JOB_ID" 2>> "$LOGDIR/job-uv.e$JOB_ID"
+fi
 
 # ジョブ情報の出力
 echo "=========================================="

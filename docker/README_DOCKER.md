@@ -88,13 +88,13 @@ docker compose exec app id
 ```yaml
 volumes:
   - ..:/workspace                          # プロジェクト全体
-  - /data1/share/kaggle-zemi:/data         # 共有ストレージ
+  - ${HOME}/kaggle_data:/data              # データ置き場（ホームの kaggle_data）
   - ${HOME}/.kaggle:/home/kaggle/.kaggle:ro  # Kaggle API認証（読み取り専用）
 ```
 
 **ポイント:**
 - `..:/workspace`: プロジェクトルートをコンテナ内の `/workspace` にマウント
-- `/data1/share/kaggle-zemi:/data`: サーバーの共有領域をコンテナ内の `/data` にマウント
+- `${HOME}/kaggle_data:/data`: 各ユーザーのホーム配下の `kaggle_data` をコンテナ内の `/data` にマウント（事前に `mkdir -p ~/kaggle_data/{datasets/raw,processed,models,outputs,working}` で作成）
 - `${HOME}/.kaggle`: 各ユーザーのホームディレクトリから認証情報を読み込む（`:ro` で読み取り専用）
 
 ### GPU設定
@@ -268,16 +268,20 @@ docker compose up -d
 
 ## イメージの共有方法
 
-### エクスポート（管理者）
+### エクスポート（管理者・任意）
+
+共有ストレージがある場合の例です。なければ各人が `docker compose build` で構築します。
 
 ```bash
-docker save kaggle-s6e2-heart:latest | gzip > /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# 例: 共有ストレージに保存する場合（パスは環境に合わせて変更）
+docker save kaggle-s6e2-heart:latest | gzip > /path/to/shared/kaggle-s6e2-heart.tar.gz
 ```
 
-### インポート（メンバー）
+### インポート（メンバー・共有イメージがある場合）
 
 ```bash
-docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# 例: 共有ストレージからロード（パスは環境に合わせて変更）
+docker load < /path/to/shared/kaggle-s6e2-heart.tar.gz
 docker images | grep kaggle-s6e2-heart
 ```
 

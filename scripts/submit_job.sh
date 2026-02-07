@@ -25,18 +25,26 @@
 #$ -l mem_req=16g
 #$ -l h_vmem=16g
 #$ -N kaggle-run
-#$ -o logs/
-#$ -e logs/
 
 set -e
 
-# スクリプトの位置からプロジェクトルートを取得（qsub -cwd でプロジェクトルートにいる想定）
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# プロジェクトルート: 投入元ディレクトリ（SGE/UGE が設定）があればそれを使い、なければスクリプトの位置から取得
+if [ -n "${SGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$SGE_O_WORKDIR"
+elif [ -n "${UGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$UGE_O_WORKDIR"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
-# ログ出力用ディレクトリ（SGE が -o/-e で logs/ に出すため、事前に作成）
-mkdir -p "$PROJECT_ROOT/logs"
+# ログをプロジェクトの logs/ に出力（計算ノードで -o/-e の相対パスがスプール配下になり権限エラーになるため）
+LOGDIR="$PROJECT_ROOT/logs"
+mkdir -p "$LOGDIR"
+if [ -n "${JOB_ID:-}" ]; then
+    exec >> "$LOGDIR/kaggle-run.o$JOB_ID" 2>> "$LOGDIR/kaggle-run.e$JOB_ID"
+fi
 
 # 引数がなければ usage を表示して終了
 if [ $# -eq 0 ]; then

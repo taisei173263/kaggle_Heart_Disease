@@ -75,6 +75,35 @@ tail -f logs/kaggle-run.e12345
 
 ---
 
+## ✅ 初回のみ: 環境チェック（疎通確認）
+
+初めてジョブを投げる前に、データ・GPU・書き込みの疎通を確認しましょう。
+
+```bash
+cd ~/kaggle/competitions/kaggle-s6e2-heart
+mkdir -p logs
+qsub scripts/submit_job.sh src/check_env.py
+```
+
+**ジョブ終了後の確認:**
+
+```bash
+# ジョブが終わっているか確認（何も出なければ終了）
+qstat
+
+# 結果を確認（✅ が3つ出ればOK）
+tail -20 logs/kaggle-run.o<ジョブID>
+```
+
+**成功の目安:**
+- ✅ データ読み込み成功
+- ✅ GPU認識成功
+- ✅ 書き込みテスト成功
+
+これらが出ていれば、環境は正常に動作しています。
+
+---
+
 ## 🚀 基本的な使い方
 
 ### 1. シンプルなジョブ投入

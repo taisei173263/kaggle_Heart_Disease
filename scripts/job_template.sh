@@ -4,9 +4,7 @@
 #$ -l mem_req=16g
 #$ -l h_vmem=16g
 #$ -l gpu=1
-#$ -N kaggle-s6e2-heart
-#$ -o logs/job_$JOB_ID.out
-#$ -e logs/job_$JOB_ID.err
+#$ -N my-experiment
 #$ -M your_email@example.com
 #$ -m be
 
@@ -23,7 +21,7 @@
 # 使い方:
 #   1. このファイルをコピーして編集
 #      cp scripts/job_template.sh scripts/my_experiment.sh
-#   2. 必要に応じてパラメータを変更
+#   2. 必要に応じてパラメータを変更（ジョブ名・メモリ・GPU数など）
 #   3. ジョブを投入
 #      qsub scripts/my_experiment.sh
 #
@@ -34,15 +32,26 @@
 #   -l h_vmem=16g     : 最大メモリ（mem_reqと同じ値を推奨）
 #   -l gpu=1          : GPU数（0, 1, 2等）
 #   -N <name>         : ジョブ名
-#   -o <path>         : 標準出力ファイル
-#   -e <path>         : 標準エラー出力ファイル
 #   -M <email>        : 通知先メールアドレス
 #   -m be             : メール通知タイミング（b=開始, e=終了, a=中断）
 #
 # ========================================
 
-# ログディレクトリの作成
-mkdir -p logs
+# プロジェクトルート（投入元ディレクトリ）
+if [ -n "${SGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$SGE_O_WORKDIR"
+elif [ -n "${UGE_O_WORKDIR:-}" ]; then
+    PROJECT_ROOT="$UGE_O_WORKDIR"
+else
+    PROJECT_ROOT="$(pwd)"
+fi
+
+# ログをプロジェクトの logs/ に出力
+LOGDIR="$PROJECT_ROOT/logs"
+mkdir -p "$LOGDIR"
+if [ -n "${JOB_ID:-}" ]; then
+    exec >> "$LOGDIR/my-experiment.o$JOB_ID" 2>> "$LOGDIR/my-experiment.e$JOB_ID"
+fi
 
 # ジョブ情報の出力
 echo "=========================================="
