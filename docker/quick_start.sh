@@ -32,21 +32,21 @@ if docker images | grep -q "kaggle-s6e2-heart"; then
 else
     echo "イメージが見つかりません。以下のいずれかを選択してください:"
     echo ""
-    echo "  1) 共有ストレージからロード（推奨・高速: 1〜2分）"
+    echo "  1) 共有イメージからロード（tar.gz のパスを入力・あれば）"
     echo "  2) ローカルでビルド（初回のみ: 10〜15分）"
     echo ""
     read -p "選択 [1/2]: " choice
     
     case $choice in
         1)
-            SHARED_IMAGE="/data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz"
-            if [ -f "$SHARED_IMAGE" ]; then
+            read -p "イメージのパス (例: /path/to/kaggle-s6e2-heart.tar.gz): " SHARED_IMAGE
+            if [ -n "$SHARED_IMAGE" ] && [ -f "$SHARED_IMAGE" ]; then
                 echo "共有イメージをロード中..."
                 docker load < "$SHARED_IMAGE"
                 echo "✓ ロード完了"
             else
-                echo "エラー: 共有イメージが見つかりません: $SHARED_IMAGE"
-                echo "管理者に確認してください"
+                echo "エラー: ファイルが見つかりません: ${SHARED_IMAGE:-（未入力）}"
+                echo "2 を選んでローカルビルドしてください"
                 exit 1
             fi
             ;;

@@ -86,22 +86,25 @@ else
 fi
 echo ""
 
-# 5. 共有ストレージの確認
-echo "[5] 共有ストレージの確認"
-SHARED_DIR="/data1/share/kaggle-zemi"
+# 5. データ置き場の確認（プランB: ホームの kaggle_data）
+echo "[5] データ置き場の確認"
+SHARED_DIR="${HOME}/kaggle_data"
 if [ -d "$SHARED_DIR" ]; then
-    check_ok "共有ストレージが見つかりました: $SHARED_DIR"
+    check_ok "データ置き場が見つかりました: $SHARED_DIR"
     
     # 書き込み権限確認
     if [ -w "$SHARED_DIR" ]; then
         check_ok "書き込み権限があります"
     else
         check_warn "書き込み権限がありません"
-        echo "    管理者に権限を依頼してください"
+        echo "    実行: chmod -R 777 $SHARED_DIR"
+        echo "    実行: chmod o+x $(dirname $SHARED_DIR)"
     fi
 else
-    check_warn "共有ストレージが見つかりません: $SHARED_DIR"
-    echo "    docker-compose.yml のパスを環境に合わせて変更してください"
+    check_warn "データ置き場が見つかりません: $SHARED_DIR"
+    echo "    作成: mkdir -p $SHARED_DIR/{datasets/raw,processed,models,outputs,working}"
+    echo "    権限: chmod -R 777 $SHARED_DIR"
+    echo "    通過: chmod o+x $HOME"
 fi
 echo ""
 

@@ -23,8 +23,10 @@ services:
       # 1. プロジェクト全体をマウント
       - ..:/workspace
       
-      # 2. 共有ストレージ（大学サーバーの共有データ領域）
-      - /data1/share/kaggle-zemi:/data
+      # 2. データ置き場（プランB: ホームディレクトリを利用）
+      #    事前に作成: mkdir -p ~/kaggle_data/{datasets/raw,processed,models,outputs,working}
+      #    権限設定: chmod -R 777 ~/kaggle_data と chmod o+x ~
+      - ${HOME}/kaggle_data:/data
       
       # 3. Kaggle API認証情報（各ユーザーのホームディレクトリから）
       # ~/.kaggle/kaggle.json が存在する場合のみマウント

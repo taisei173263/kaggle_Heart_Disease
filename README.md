@@ -64,7 +64,7 @@ kaggle-s6e2-heart/
 - **サーバー環境:** Ubuntu 20.04以降
 - **Docker:** 20.10以降
 - **NVIDIA Container Toolkit:** GPU利用時に必要（後述）
-- **共有ストレージ:** `/data1/share/kaggle-zemi` が利用可能
+- **データ置き場:** ホームに `~/kaggle_data` を作成（初回に `mkdir` と `chmod` で準備）
 
 ### 1. リポジトリのクローン
 
@@ -286,17 +286,29 @@ kaggle competitions download -c playground-series-s6e2
 unzip playground-series-s6e2.zip -d data/raw/
 ```
 
-### 共有データ（チーム全体）
+### データ置き場（プランB: ホームディレクトリ）
 
-サーバーの `/data1/share/kaggle-zemi` に配置すると、全員がアクセスできます。
+コンテナ内の `/data` は、ホストの **`~/kaggle_data`** にマウントされています。初回のみ以下を実行してください。
+
+```bash
+mkdir -p ~/kaggle_data/{datasets/raw,processed,models,outputs,working}
+chmod -R 777 ~/kaggle_data
+chmod o+x ~
+```
+
+データを置く例（例: 生データを raw に）:
+
+```bash
+cp ~/kaggle/competitions/kaggle-s6e2-heart/data/raw/*.csv ~/kaggle_data/datasets/raw/
+```
 
 コンテナ内では `/data` としてマウントされています:
 
 ```python
 import pandas as pd
 
-# 共有ストレージから読み込み
-df = pd.read_csv('/data/train.csv')
+# /data（~/kaggle_data）から読み込み
+df = pd.read_csv('/data/datasets/raw/train.csv')
 ```
 
 ---
@@ -506,27 +518,29 @@ ports:
 
 Docker Hubを使わず、サーバー内でイメージを共有する方法。
 
-### イメージのエクスポート（管理者が実行）
+### イメージのエクスポート（管理者が実行・任意）
+
+共有ストレージがある場合の例です。なければ各人がローカルで `docker compose build` 即可。
 
 ```bash
 cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose build
 
-# イメージを tar ファイルに保存
-docker save kaggle-s6e2-heart:latest | gzip > /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# 例: 共有ストレージに保存する場合（パスは環境に合わせて変更）
+# docker save kaggle-s6e2-heart:latest | gzip > /path/to/shared/kaggle-s6e2-heart.tar.gz
 ```
 
-### イメージのインポート（メンバーが実行）
+### イメージのインポート（メンバーが実行・共有イメージがある場合）
 
 ```bash
-# 共有ストレージからイメージをロード
-docker load < /data1/share/kaggle-zemi/kaggle-s6e2-heart.tar.gz
+# 例: 共有ストレージからイメージをロード（パスは環境に合わせて変更）
+# docker load < /path/to/shared/kaggle-s6e2-heart.tar.gz
 
 # 確認
 docker images | grep kaggle-s6e2-heart
 ```
 
-これで `docker compose up` 時にビルドをスキップできます。（起動時は必ず `cd docker` してから `docker compose up -d` を実行すること）
+通常は `cd docker` のうえ `docker compose up -d --build` でローカルビルドして起動即可。
 
 ---
 
