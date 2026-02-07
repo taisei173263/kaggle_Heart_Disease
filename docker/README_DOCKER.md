@@ -23,16 +23,25 @@ docker/
 
 ## Dockerfile の設計思想
 
-### Base Image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+### Base Image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 **選定理由:**
 - PyTorchとCUDAが事前インストール済み（初心者でもGPUをすぐ使える）
 - 公式イメージなので安定性が高い
-- runtime版（開発ツール不要）で軽量
+- **devel版**: nvcc等のCUDAコンパイラが含まれる（LightGBM CUDA版ビルドに必要）
 
 **代替案:**
 - CPU環境のみ: `python:3.10-slim` に変更（Dockerfileの1行目を書き換え）
 - TensorFlow環境: `tensorflow/tensorflow:2.14.0-gpu`
+
+### LightGBM CUDA版のビルド
+
+**背景:**
+- `pip install lightgbm` は **CPU版** のみ。GPU で動かすには **ソースから CUDA 版をビルド** する必要がある。
+- Dockerfile 内で `cmake -DUSE_CUDA=1` でビルドし、Python パッケージをインストールしている。
+- これにより、`device='cuda'` で NVIDIA GPU を使った高速学習が可能になる。
+
+**参考:** [LightGBM Installation Guide - Build CUDA Version](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html#build-cuda-version)
 
 ### 日本語対応
 

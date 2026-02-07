@@ -1,48 +1,108 @@
 """
-学習用スクリプト・実験管理用。
-CLI や Notebook から呼び出して学習・評価・保存を行う。
+学習用スクリプト・ベースライン（LightGBM CV → 提出ファイル作成）。
+コンテナ内の /data を参照（~/kaggle_data にマウント想定）。
+
+使い方:
+  python src/train.py
+  または: qsub scripts/submit_job.sh src/train.py
 """
 import pandas as pd
-from pathlib import Path
+import numpy as np
+import lightgbm as lgb
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import roc_auc_score
+import os
 
-from .config import DEFAULT_SEED, MODELS_DIR, EVAL_METRIC
-from .utils import set_seed
+# --- 設定 ---
+DATA_DIR = "/data/datasets/raw"
+OUTPUT_DIR = "/data/outputs"
+MODEL_DIR = "/data/models"
+ID_COL = "id"
+TARGET_COL = "Heart Disease"  # コンペの列名（スペースあり）
+N_FOLDS = 5
+SEED = 42
+
+# LightGBM のデバイス: Dockerfile で CUDA 版をビルド済みのため "cuda" を使用
+# CPU で動かす場合は環境変数 LGBM_DEVICE=cpu を設定
+LGBM_DEVICE = os.environ.get("LGBM_DEVICE", "cuda")  # "cuda"（CUDA版・デフォルト） | "cpu"
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
 
 
-def run_train(
-    X_train: pd.DataFrame,
-    y_train: pd.Series,
-    X_val: pd.DataFrame | None = None,
-    y_val: pd.Series | None = None,
-    model_name: str = "xgboost",
-    save_dir: str | Path | None = None,
-    seed: int = DEFAULT_SEED,
-) -> object:
-    """
-    学習を実行し、モデルを返す（および保存）。
-    save_dir 例: models/20260206_xgboost
-    """
-    set_seed(seed)
+def train():
+    print("=== データ読み込み ===")
+    train_df = pd.read_csv(f"{DATA_DIR}/train.csv")
+    test_df = pd.read_csv(f"{DATA_DIR}/test.csv")
+    sub_df = pd.read_csv(f"{DATA_DIR}/sample_submission.csv")
 
-    if model_name == "xgboost":
-        import xgboost as xgb
-        model = xgb.XGBClassifier(
-            random_state=seed,
+    print(f"Train shape: {train_df.shape}")
+
+    # 簡易的な前処理（数値列のみ使用、欠損埋め）
+    num_cols = train_df.select_dtypes(include=[np.number]).columns.tolist()
+    features = [c for c in num_cols if c not in [ID_COL, TARGET_COL]]
+
+    X = train_df[features]
+    y = train_df[TARGET_COL]
+    X_test = test_df[features]
+
+    print(f"Features: {len(features)} cols")
+
+    # --- Cross Validation ---
+    kf = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED)
+    oof_preds = np.zeros(len(X))
+    test_preds = np.zeros(len(X_test))
+
+    for fold, (train_idx, val_idx) in enumerate(kf.split(X, y)):
+        print(f"\n--- Fold {fold + 1} ---")
+        X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+        X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
+
+        params = {
+            "objective": "binary",
+            "metric": "auc",
+            "boosting_type": "gbdt",
+            "n_estimators": 1000,
+            "learning_rate": 0.05,
+            "device": LGBM_DEVICE,  # "cuda" でGPU使用（Dockerfile でCUDA版ビルド済み）
+            "verbose": -1,
+            "random_state": SEED,
+        }
+        # CUDA版では gpu_platform_id / gpu_device_id は不要（OpenCL版のみで使用）
+
+        model = lgb.LGBMClassifier(**params)
+
+        callbacks = [
+            lgb.early_stopping(stopping_rounds=50, verbose=True),
+            lgb.log_evaluation(50),
+        ]
+
+        model.fit(
+            X_train,
+            y_train,
+            eval_set=[(X_val, y_val)],
             eval_metric="auc",
-            use_label_encoder=False,
+            callbacks=callbacks,
         )
-    else:
-        raise ValueError(f"Unknown model_name: {model_name}")
 
-    fit_kw = {}
-    if X_val is not None and y_val is not None:
-        fit_kw["eval_set"] = [(X_val, y_val)]
+        val_pred = model.predict_proba(X_val)[:, 1]
+        oof_preds[val_idx] = val_pred
+        test_preds += model.predict_proba(X_test)[:, 1] / N_FOLDS
 
-    model.fit(X_train, y_train, **fit_kw)
+        score = roc_auc_score(y_val, val_pred)
+        print(f"Fold {fold + 1} AUC: {score:.4f}")
 
-    if save_dir is not None:
-        save_path = Path(save_dir)
-        save_path.mkdir(parents=True, exist_ok=True)
-        model.save_model(str(save_path / "model.json"))
+        model.booster_.save_model(f"{MODEL_DIR}/lgbm_fold{fold+1}.txt")
 
-    return model
+    # --- 結果集計 ---
+    total_score = roc_auc_score(y, oof_preds)
+    print(f"\n=== CV Score (AUC): {total_score:.4f} ===")
+
+    sub_df[TARGET_COL] = test_preds
+    sub_path = f"{OUTPUT_DIR}/submission_v1.csv"
+    sub_df.to_csv(sub_path, index=False)
+    print(f"✅ Submission saved to: {sub_path}")
+
+
+if __name__ == "__main__":
+    train()

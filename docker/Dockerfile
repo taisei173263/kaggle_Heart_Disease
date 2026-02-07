@@ -1,6 +1,7 @@
 # Kaggle S6E2 Heart - 分析環境（GPU対応・日本語対応）
 # Base: PyTorch公式イメージ（CUDA 12.1 + Python 3.10）
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+# devel版: nvcc等のCUDAコンパイラが必要（LightGBM CUDA版ビルドのため）
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 # 作業ディレクトリ
 WORKDIR /workspace
@@ -13,11 +14,13 @@ ENV PYTHONUNBUFFERED=1 \
 
 # システムパッケージのインストール
 # - build-essential: C/C++コンパイラ（LightGBM等のビルドに必要）
+# - cmake: LightGBM CUDA版ビルドに必要
 # - git: バージョン管理
 # - fonts-ipaexfont: 日本語フォント（matplotlib等での文字化け防止）
 # - locales: ロケール設定
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    cmake \
     git \
     fonts-ipaexfont \
     fonts-ipafont \
@@ -32,7 +35,20 @@ RUN mkdir -p /etc/matplotlib && \
     # フォントキャッシュをクリア（初回起動時の再構築を促す）
     rm -rf /root/.cache/matplotlib
 
-# Python依存関係のインストール
+# LightGBM CUDA版をソースからビルド（pip版はCPUのみのため）
+# CUDA 12.1 環境で USE_CUDA=1 でビルドし、Python パッケージをインストール
+RUN git clone --recursive https://github.com/microsoft/LightGBM /tmp/LightGBM && \
+    cd /tmp/LightGBM && \
+    mkdir build && \
+    cd build && \
+    cmake -DUSE_CUDA=1 -DCMAKE_PREFIX_PATH=/usr/local/cuda .. && \
+    make -j$(nproc) && \
+    cd ../python-package && \
+    python setup.py install && \
+    cd / && \
+    rm -rf /tmp/LightGBM
+
+# Python依存関係のインストール（lightgbm は上でソースビルド済み）
 COPY docker/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /tmp/requirements.txt

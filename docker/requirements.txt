@@ -9,7 +9,7 @@ plotly>=5.14
 # 機械学習フレームワーク
 scikit-learn>=1.3
 xgboost>=2.0
-lightgbm>=4.0
+# lightgbm>=4.0  # Dockerfile で CUDA 版をソースビルドするため pip からは除外
 catboost>=1.2
 
 # ハイパーパラメータ最適化

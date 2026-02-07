@@ -19,7 +19,8 @@ kaggle-s6e2-heart/
 │   ├── setup_check.sh
 │   └── quick_start.sh
 ├── docs/                  # ドキュメント
-│   └── JOB_GUIDE.md       # ジョブスクリプト使用ガイド
+│   ├── JOB_GUIDE.md       # ジョブスクリプト使用ガイド
+│   └── LIGHTGBM_GPU.md    # LightGBM を GPU で動かすための現状まとめ
 ├── data/
 │   ├── raw/               # KaggleからDLした元データ (train.csv, test.csv)
 │   ├── processed/         # 前処理済みデータ (feather/parquet)
@@ -160,10 +161,12 @@ EOF
 
 ```bash
 cd docker
-docker compose build
+docker compose build --no-cache
 ```
 
-**初回は10〜15分程度かかります**（PyTorchイメージのダウンロード + ライブラリインストール）。
+**初回は15〜25分程度かかります**（PyTorch devel イメージのダウンロード + LightGBM CUDA 版ソースビルド + ライブラリインストール）。
+
+**補足:** LightGBM を GPU（CUDA）で動かすため、Dockerfile 内で LightGBM をソースから `-DUSE_CUDA=1` でビルドしています。詳細は `docs/LIGHTGBM_GPU.md` を参照してください。
 
 ---
 
@@ -407,11 +410,22 @@ qsub scripts/submit_job.sh src/check_env.py
 tail -20 logs/kaggle-run.o<ジョブID>
 ```
 
-**学習ジョブの投入**
+**ベースライン学習（初回提出用）**
 
 ```bash
-# 計算ノードの Docker 内で 1 回だけコマンド実行（推奨・PC を閉じても継続）
-qsub scripts/submit_job.sh src/train.py --epochs 10
+# LightGBM 5-fold CV で学習し、~/kaggle_data/outputs/submission_v1.csv を生成
+qsub scripts/submit_job.sh src/train.py
+
+# 終了後、提出ファイルをプロジェクトの data/output にコピーして提出
+cp ~/kaggle_data/outputs/submission_v1.csv data/output/
+./scripts/submit.sh data/output/submission_v1.csv "LightGBM baseline v1"
+```
+
+**その他の学習ジョブ**
+
+```bash
+# 計算ノードの Docker 内で任意のスクリプトを実行
+qsub scripts/submit_job.sh src/train.py
 
 # または従来のジョブ投入（ホストで uv run）
 qsub scripts/job.sh
@@ -444,6 +458,8 @@ qsub scripts/job_array.sh
 ```
 
 **詳細:** `docs/JOB_GUIDE.md` を参照
+
+**LightGBM を GPU で使いたい場合:** 現状 pip の LightGBM は OpenCL 前提のため `No OpenCL device found` になります。CUDA 版のビルド手順や OpenCL の入れ方は `docs/LIGHTGBM_GPU.md` を参照してください。
 
 ---
 
