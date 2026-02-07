@@ -22,9 +22,9 @@ TARGET_COL = "Heart Disease"  # コンペの列名（スペースあり）
 N_FOLDS = 5
 SEED = 42
 
-# LightGBM のデバイス: Dockerfile で CUDA 版をビルド済みのため "cuda" を使用
-# CPU で動かす場合は環境変数 LGBM_DEVICE=cpu を設定
-LGBM_DEVICE = os.environ.get("LGBM_DEVICE", "cuda")  # "cuda"（CUDA版・デフォルト） | "cpu"
+# LightGBM のデバイス: Kaggle公式イメージの LightGBM は GPU 対応済み
+# デフォルトで "cuda" を使用（CPU で動かす場合は環境変数 LGBM_DEVICE=cpu を設定）
+LGBM_DEVICE = os.environ.get("LGBM_DEVICE", "cuda")  # "cuda"（GPU・デフォルト） | "cpu"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)

@@ -164,9 +164,12 @@ cd docker
 docker compose build --no-cache
 ```
 
-**初回は15〜25分程度かかります**（PyTorch devel イメージのダウンロード + LightGBM CUDA 版ソースビルド + ライブラリインストール）。
+**⚠️ 重要: 初回は30分〜1時間程度かかります**
+- Kaggle公式イメージ（`gcr.io/kaggle-images/python`）は **20GB〜40GB** の大容量イメージです
+- ダウンロードに時間がかかりますが、その分 **全てのライブラリがプリインストール済み** です
+- LightGBM, XGBoost, CatBoost, PyTorch, TensorFlow など、全て GPU 対応版が含まれています
 
-**補足:** LightGBM を GPU（CUDA）で動かすため、Dockerfile 内で LightGBM をソースから `-DUSE_CUDA=1` でビルドしています。詳細は `docs/LIGHTGBM_GPU.md` を参照してください。
+**補足:** Kaggle Notebook と完全に同じ環境が手に入るため、ローカルでの実験結果がそのまま Kaggle に反映されます。
 
 ---
 

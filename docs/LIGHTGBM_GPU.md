@@ -83,10 +83,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ## 現在の実装状態
 
-### ✅ 対応済み: CUDA 版をビルド
+### ✅ 対応済み: Kaggle公式イメージを使用
 
-- **Dockerfile** で LightGBM を **`-DUSE_CUDA=1`** でソースビルドし、Python パッケージをインストール済み。
-- **ベースイメージ** を `runtime` から **`devel`** に変更（nvcc コンパイラが必要なため）。
+- **Dockerfile** で **Kaggle公式イメージ (`gcr.io/kaggle-images/python`)** をベースに使用。
+- Kaggle公式イメージには **LightGBM GPU 版がプリインストール済み** のため、ソースビルド不要。
 - **`src/train.py`** はデフォルトで **`device='cuda'`** を使用（環境変数 `LGBM_DEVICE=cpu` で CPU に切替可能）。
 
 ### 使い方

@@ -23,25 +23,35 @@ docker/
 
 ## Dockerfile の設計思想
 
-### Base Image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
+### Base Image: gcr.io/kaggle-images/python:latest
 
 **選定理由:**
-- PyTorchとCUDAが事前インストール済み（初心者でもGPUをすぐ使える）
-- 公式イメージなので安定性が高い
-- **devel版**: nvcc等のCUDAコンパイラが含まれる（LightGBM CUDA版ビルドに必要）
+- **Kaggle公式イメージ**: Kaggle Notebook と完全に同じ環境
+- **全てのライブラリがプリインストール済み**:
+  - データ処理: pandas, numpy, polars
+  - 可視化: matplotlib, seaborn, plotly
+  - 機械学習: scikit-learn, xgboost, lightgbm (GPU版), catboost
+  - ディープラーニング: PyTorch, TensorFlow (両方 GPU 対応)
+  - その他: optuna, JupyterLab, RAPIDS など
+- **GPU 対応**: LightGBM, XGBoost, CatBoost 全て GPU 版が含まれる
+- **バージョン管理不要**: Kaggle が管理しているため、常に最新の安定版
+
+**トレードオフ:**
+- イメージサイズが大きい（20GB〜40GB）
+- ダウンロードに時間がかかる（初回のみ）
+- ディスク容量に余裕が必要
 
 **代替案:**
-- CPU環境のみ: `python:3.10-slim` に変更（Dockerfileの1行目を書き換え）
-- TensorFlow環境: `tensorflow/tensorflow:2.14.0-gpu`
+- 軽量環境が必要な場合: `python:3.10-slim` や `pytorch/pytorch:latest` に変更
 
-### LightGBM CUDA版のビルド
+### 環境の一貫性
 
-**背景:**
-- `pip install lightgbm` は **CPU版** のみ。GPU で動かすには **ソースから CUDA 版をビルド** する必要がある。
-- Dockerfile 内で `cmake -DUSE_CUDA=1` でビルドし、Python パッケージをインストールしている。
-- これにより、`device='cuda'` で NVIDIA GPU を使った高速学習が可能になる。
+Kaggle公式イメージを使うことで、以下のメリットがあります:
+- ローカルでの実験結果が Kaggle Notebook でそのまま再現できる
+- バージョン違いによる挙動の差異がない
+- GPU 関連のビルドやインストールが不要（全て済んでいる）
 
-**参考:** [LightGBM Installation Guide - Build CUDA Version](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html#build-cuda-version)
+**参考:** [Kaggle Docker Images on GitHub](https://github.com/Kaggle/docker-python)
 
 ### 日本語対応
 
