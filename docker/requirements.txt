@@ -5,12 +5,12 @@
 # - pandas, numpy, matplotlib, seaborn, plotly
 # - scikit-learn, xgboost, lightgbm (GPU版), catboost, tensorflow, pytorch
 # - optuna, jupyterlab, ipywidgets, notebook
+# - kaggle CLI (>=1.8.3)
 # - tqdm など
 #
+# 詳細: https://github.com/Kaggle/docker-python/blob/main/kaggle_requirements.txt
+#
 # このファイルには、Kaggle公式イメージに含まれない追加パッケージのみを記載します。
-
-# Kaggle API（公式イメージには含まれない可能性があるため明示）
-kaggle>=1.5
 
 # 環境変数管理
 python-dotenv>=1.0
