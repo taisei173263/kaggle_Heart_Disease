@@ -2,6 +2,24 @@
 
 心疾患の有無を予測する2値分類タスク。評価指標は **ROC AUC** です。
 
+---
+
+## 🚀 初めての方へ
+
+**Kaggle 初心者の方は、まず [`SETUP_SUMMARY.md`](SETUP_SUMMARY.md) をお読みください。**
+
+このドキュメントでは、環境構築から最初の Kaggle 提出まで、ステップバイステップで解説しています。
+
+| 対象 | 読むべきドキュメント |
+|------|---------------------|
+| **初めて環境構築する方** | [`SETUP_SUMMARY.md`](SETUP_SUMMARY.md) |
+| **チームで運用する方** | [`TEAM_GUIDE.md`](TEAM_GUIDE.md) |
+| **データを共有したい方** | [`docs/DATA_SHARING_GUIDE.md`](docs/DATA_SHARING_GUIDE.md) |
+| **Git/GitHub の設定が必要な方** | [`docs/GIT_GITHUB_SETUP.md`](docs/GIT_GITHUB_SETUP.md) |
+| **コンペの進め方を知りたい方** | [`docs/WORKFLOW_GUIDE.md`](docs/WORKFLOW_GUIDE.md) |
+
+---
+
 ## 📁 フォルダ構成
 
 ```

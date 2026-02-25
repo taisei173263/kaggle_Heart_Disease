@@ -27,6 +27,12 @@ git clone https://github.com/taisei173263/kaggle_Heart_Disease.git kaggle/compet
 cd kaggle/competitions/kaggle-s6e2-heart
 ```
 
+> **💡 Git/GitHub の初期設定について**
+> 
+> 初めて Git を使う方や、push 時にエラーが出る場合は [`docs/GIT_GITHUB_SETUP.md`](docs/GIT_GITHUB_SETUP.md) を参照してください。
+> - `user.name` / `user.email` の設定
+> - GitHub への push 認証（Personal Access Token または SSH）
+
 ### Step 2: Kaggle API認証の設定（5分）
 
 #### 2-1. Kaggle APIトークンの取得
@@ -167,15 +173,34 @@ cat logs/kaggle-run.o*
 ✅ Submission saved to: /data/outputs/submission_v1.csv
 ```
 
-### Step 8: Kaggle への提出（5分）
+### Step 8: 初めての Kaggle 提出（5分）
+
+学習が完了したら、生成された提出ファイルを Kaggle に送信します。
+
+#### 8-1. 提出ファイルの確認
+
+```bash
+# 提出ファイルが生成されているか確認
+ls -lh ~/kaggle_data/outputs/submission_v1.csv
+# -rw-r--r-- 1 user user 2.1M Feb 26 10:30 submission_v1.csv
+
+# 中身をチラ見（id と Heart Disease 列があればOK）
+head ~/kaggle_data/outputs/submission_v1.csv
+```
+
+#### 8-2. プロジェクトにコピー
 
 ```bash
 cd ~/kaggle/competitions/kaggle-s6e2-heart
 
-# 提出ファイルをプロジェクトにコピー
+# data/output/ にコピー
 cp ~/kaggle_data/outputs/submission_v1.csv data/output/
+```
 
-# Kaggle に提出
+#### 8-3. Kaggle に提出
+
+```bash
+# 提出スクリプトを実行
 ./scripts/submit.sh data/output/submission_v1.csv "LightGBM baseline v1"
 ```
 
@@ -185,7 +210,32 @@ cp ~/kaggle_data/outputs/submission_v1.csv data/output/
 kaggle competitions submissions -c playground-series-s6e2
 ```
 
+#### 8-4. リーダーボードで確認
+
+Kaggle のコンペページでスコアを確認します。
+
+1. ブラウザで [Playground Series S6E2](https://www.kaggle.com/competitions/playground-series-s6e2) を開く
+2. 上部メニューの **My Submissions** をクリック
+3. 最新の提出が表示され、数分後に **Public Score** が表示されます
+
+**スコアの目安:**
+- ベースライン（LightGBM）: 0.85〜0.90 程度
+- 上位入賞ライン: 0.92〜0.95 程度
+
 **おめでとうございます！** これでリーダーボードに乗りました 🎉
+
+---
+
+## 🎓 次のステップ
+
+初回提出が完了したら、以下のドキュメントを参考にスコアを改善していきましょう。
+
+| ドキュメント | 内容 |
+|-------------|------|
+| [`docs/WORKFLOW_GUIDE.md`](docs/WORKFLOW_GUIDE.md) | Kaggle コンペの進め方（EDA → 特徴量 → モデル改善） |
+| [`docs/JOB_GUIDE.md`](docs/JOB_GUIDE.md) | ジョブスクリプトの詳細な使い方 |
+| [`docs/DATA_SHARING_GUIDE.md`](docs/DATA_SHARING_GUIDE.md) | チームでデータを共有する方法 |
+| [`TEAM_GUIDE.md`](TEAM_GUIDE.md) | チーム運用のベストプラクティス |
 
 ---
 
