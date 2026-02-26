@@ -79,6 +79,21 @@ cat .env | grep KAGGLE
 
 **重要:** この設定でホストと Docker コンテナの両方で Kaggle API が使えます。
 
+#### 2-3. Kaggle CLI のインストール（ホストで提出・データDLする場合）
+
+`./scripts/submit.sh` や `kaggle competitions download` は**ホスト上**で実行されるため、ホストに Kaggle CLI を入れておく必要があります。
+
+```bash
+# pip でインストール
+pip install --user kaggle
+
+# 動作確認
+kaggle --version
+```
+
+- **Docker 内**では Kaggle 公式イメージに CLI が含まれているため不要です。
+- ホストに Python がない場合は、データDL・提出はコンテナ内で実行してください。
+
 ### Step 3: データ置き場の作成（2分）
 
 ```bash
@@ -458,6 +473,7 @@ def create_features(df):
 
 - [ ] リポジトリをクローン
 - [ ] `.env` ファイルを作成し `KAGGLE_USERNAME` と `KAGGLE_KEY` を設定
+- [ ] ホストに Kaggle CLI をインストール（`pip install --user kaggle`）※submit.sh を使う場合
 - [ ] `~/kaggle_data/` を作成・権限設定
 - [ ] Docker イメージをビルド（40GB超になればOK）
 - [ ] データをダウンロード・配置

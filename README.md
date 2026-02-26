@@ -85,6 +85,7 @@ kaggle-s6e2-heart/
 - **Docker:** 20.10以降
 - **NVIDIA Container Toolkit:** GPU利用時に必要（後述）
 - **データ置き場:** ホームに `~/kaggle_data` を作成（初回に `mkdir` と `chmod` で準備）
+- **Kaggle CLI（ホスト用）:** ホストで `./scripts/submit.sh` や `kaggle competitions download` を使う場合は、ホストに Kaggle CLI のインストールが必要（後述）
 
 ### 1. リポジトリのクローン
 
@@ -146,6 +147,24 @@ KAGGLE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 - `kaggle.json` の `username` と `key` の値を**そのまま**コピーしてください
 - `key` は 32 文字の英数字です（`KGAT_` などのプレフィックスは不要）
 - この設定で、ホストと Docker コンテナの両方で Kaggle API が使えます
+
+#### 2-3. Kaggle CLI のインストール（ホストで submit.sh を使う場合）
+
+`./scripts/submit.sh` や `kaggle competitions download` は**ホスト上**で実行されるため、ホストに Kaggle CLI が入っている必要があります。
+
+```bash
+# pip でインストール（推奨）
+pip install --user kaggle
+
+# または uv を使う場合
+uv pip install kaggle
+
+# 動作確認
+kaggle --version
+```
+
+- **Docker コンテナ内**では Kaggle 公式イメージに既に Kaggle CLI が含まれているため、追加インストールは不要です。
+- ホストに Python がない場合は、データのダウンロード・提出はコンテナ内で行ってください（`docker compose exec app kaggle competitions download -c playground-series-s6e2` など）。
 
 ### 3. Docker環境のビルド
 
@@ -384,6 +403,8 @@ git push origin main
 ## 📤 Kaggleへの提出
 
 ### 方法1: スクリプトから提出
+
+ホストで `./scripts/submit.sh` を実行します。**ホストに Kaggle CLI が入っている必要があります**（未インストールの場合は「2-3. Kaggle CLI のインストール」を参照）。
 
 ```bash
 cd ~/kaggle/competitions/kaggle-s6e2-heart
