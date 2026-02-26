@@ -108,13 +108,22 @@ docker compose exec app id
 volumes:
   - ..:/workspace                          # プロジェクト全体
   - ${HOME}/kaggle_data:/data              # データ置き場（ホームの kaggle_data）
-  - ${HOME}/.kaggle:/home/kaggle/.kaggle:ro  # Kaggle API認証（読み取り専用）
 ```
 
 **ポイント:**
 - `..:/workspace`: プロジェクトルートをコンテナ内の `/workspace` にマウント
 - `${HOME}/kaggle_data:/data`: 各ユーザーのホーム配下の `kaggle_data` をコンテナ内の `/data` にマウント（事前に `mkdir -p ~/kaggle_data/{datasets/raw,processed,models,outputs,working}` で作成）
-- `${HOME}/.kaggle`: 各ユーザーのホームディレクトリから認証情報を読み込む（`:ro` で読み取り専用）
+
+### 環境変数
+
+```yaml
+env_file:
+  - ../.env  # Kaggle API認証情報を含む環境変数
+```
+
+**ポイント:**
+- `.env` ファイルから `KAGGLE_USERNAME` と `KAGGLE_KEY` などの環境変数を自動的にコンテナに渡します
+- `~/.kaggle/kaggle.json` は不要です（`.env` で完結）
 
 ### GPU設定
 

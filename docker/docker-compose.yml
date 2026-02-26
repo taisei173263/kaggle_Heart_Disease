@@ -19,6 +19,10 @@ services:
     # UID/GIDを明示的に指定（Dockerfileと合わせる）
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     
+    # .env ファイルから環境変数を読み込む
+    env_file:
+      - ../.env
+    
     volumes:
       # 1. プロジェクト全体をマウント
       - ..:/workspace
@@ -28,20 +32,13 @@ services:
       #    権限設定: chmod -R 777 ~/kaggle_data と chmod o+x ~
       - ${HOME}/kaggle_data:/data
       
-      # 3. Kaggle API認証情報（各ユーザーのホームディレクトリから）
-      # ~/.kaggle/kaggle.json が存在する場合のみマウント
-      # 存在しない場合はコメントアウトするか、事前に作成しておく
-      - ${HOME}/.kaggle:/home/kaggle/.kaggle:ro
-      
-      # 4. JupyterLab設定の永続化（オプション）
+      # 3. JupyterLab設定の永続化（オプション）
       - jupyter-config:/home/kaggle/.jupyter
     
     working_dir: /workspace
     
     # 環境変数
     environment:
-      # Kaggle API認証（.envファイルまたは~/.kaggle/kaggle.jsonで設定）
-      - KAGGLE_CONFIG_DIR=/home/kaggle/.kaggle
       # JupyterLab設定
       - JUPYTER_ENABLE_LAB=yes
     

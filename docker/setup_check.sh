@@ -67,22 +67,24 @@ else
 fi
 echo ""
 
-# 4. kaggle.json の確認
+# 4. .env と Kaggle 認証情報の確認
 echo "[4] Kaggle API認証情報の確認"
-if [ -f "$HOME/.kaggle/kaggle.json" ]; then
-    check_ok "kaggle.json が見つかりました: $HOME/.kaggle/kaggle.json"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    check_ok ".env ファイルが見つかりました: $PROJECT_ROOT/.env"
     
-    # パーミッション確認
-    PERMS=$(stat -c "%a" "$HOME/.kaggle/kaggle.json" 2>/dev/null || stat -f "%A" "$HOME/.kaggle/kaggle.json" 2>/dev/null)
-    if [ "$PERMS" = "600" ]; then
-        check_ok "パーミッションが正しく設定されています (600)"
+    # KAGGLE_USERNAME と KAGGLE_KEY の確認
+    if grep -q "^KAGGLE_USERNAME=" "$PROJECT_ROOT/.env" && grep -q "^KAGGLE_KEY=" "$PROJECT_ROOT/.env"; then
+        check_ok "KAGGLE_USERNAME と KAGGLE_KEY が設定されています"
     else
-        check_warn "パーミッションが推奨設定ではありません (現在: $PERMS, 推奨: 600)"
-        echo "    修正: chmod 600 $HOME/.kaggle/kaggle.json"
+        check_warn "KAGGLE_USERNAME または KAGGLE_KEY が .env に設定されていません"
+        echo "    設定方法: README.md の「2. Kaggle API認証の設定」を参照"
     fi
 else
-    check_error "kaggle.json が見つかりません"
-    echo "    作成方法: README.md の「2. Kaggle API認証の設定」を参照"
+    check_error ".env ファイルが見つかりません"
+    echo "    作成方法: cp .env.example .env && vim .env"
 fi
 echo ""
 

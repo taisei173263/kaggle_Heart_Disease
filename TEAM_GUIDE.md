@@ -58,7 +58,7 @@ cd kaggle-s6e2-heart
 ```
 ✓ Docker がインストールされています
 ✓ Docker Compose がインストールされています
-✓ kaggle.json が見つかりました
+✓ .env ファイルが見つかりました
 ⚠ kaggle-s6e2-heart イメージが見つかりません
 ```
 
@@ -138,7 +138,21 @@ docker compose up -d
 
 ## 🔐 セキュリティ管理
 
-### kaggle.json の取り扱い
+### 認証情報の管理方針
+
+**このプロジェクトでは `.env` ファイルで認証を統一管理します:**
+
+- ✅ **採用**: プロジェクト直下の `.env` に `KAGGLE_USERNAME` と `KAGGLE_KEY` を設定
+- ❌ **不採用**: `~/.kaggle/kaggle.json` の配置（従来の方法は使用しない）
+
+**理由:**
+- プロジェクト内で完結（チーム全員が同じ手順）
+- ホストと Docker コンテナで同じ設定を共有
+- 設定ファイルが1か所に集約
+
+### .env ファイルの取り扱い
+
+`.env` には `KAGGLE_USERNAME` と `KAGGLE_KEY` が含まれるため、**絶対にGitにコミットしないこと**（`.gitignore` に追加済み）。
 
 **絶対にやってはいけないこと:**
 - ❌ Gitにコミット
@@ -148,12 +162,8 @@ docker compose up -d
 
 **正しい方法:**
 - ✅ 各自が自分のKaggleアカウントで発行
-- ✅ `~/.kaggle/kaggle.json` に配置
-- ✅ パーミッション `600` に設定
-
-### .env ファイルの取り扱い
-
-`.env` には `KAGGLE_API_TOKEN` が含まれるため、`.gitignore` に追加済み。
+- ✅ プロジェクト直下の `.env` に配置
+- ✅ `.gitignore` で除外されていることを確認
 
 **確認:**
 
@@ -354,7 +364,7 @@ kaggle competitions submissions -c playground-series-s6e2 | head -5
 ### オンボーディングチェックリスト
 
 - [ ] Kaggleアカウント作成
-- [ ] kaggle.json の配置
+- [ ] `.env` ファイルに `KAGGLE_USERNAME` と `KAGGLE_KEY` を設定
 - [ ] Git の基本操作（clone, pull, commit, push）
 - [ ] Docker環境の起動
 - [ ] JupyterLabへのアクセス

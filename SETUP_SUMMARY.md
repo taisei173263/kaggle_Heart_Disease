@@ -35,6 +35,8 @@ cd kaggle/competitions/kaggle-s6e2-heart
 
 ### Step 2: Kaggle API認証の設定（5分）
 
+**このプロジェクトの認証方式:** `.env` ファイルのみで完結（`~/.kaggle/kaggle.json` は不要）
+
 #### 2-1. Kaggle APIトークンの取得
 
 1. [Kaggle](https://www.kaggle.com/) にログイン
@@ -42,33 +44,40 @@ cd kaggle/competitions/kaggle-s6e2-heart
 3. **Create New API Token** をクリック
 4. `kaggle.json` がダウンロードされる
 
-#### 2-2. kaggle.json の配置
+#### 2-2. .env ファイルへの設定（3ステップ）
 
 ```bash
-# ホームディレクトリに .kaggle フォルダを作成
-mkdir -p ~/.kaggle
-
-# ダウンロードした kaggle.json を移動（パスは環境に合わせて変更）
-mv ~/Downloads/kaggle.json ~/.kaggle/
-
-# パーミッション設定（重要: 自分だけが読み書きできるようにする）
-chmod 600 ~/.kaggle/kaggle.json
-```
-
-#### 2-3. KAGGLE_API_TOKEN の設定（ホストで submit.sh を使う場合）
-
-```bash
-# .env ファイルを作成
+# ステップ1: .env ファイルを作成
 cd ~/kaggle/competitions/kaggle-s6e2-heart
 cp .env.example .env
 
-# kaggle.json の key を確認
-cat ~/.kaggle/kaggle.json
-# {"username":"your_username","key":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
+# ステップ2: ダウンロードした kaggle.json を開いて username と key を確認
+cat ~/Downloads/kaggle.json
+# 出力例: {"username":"your_username","key":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}
 
-# .env に追記（KGAT_ プレフィックスを付ける）
-echo "KAGGLE_API_TOKEN=KGAT_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" >> .env
+# ステップ3: .env ファイルを編集して KAGGLE_USERNAME と KAGGLE_KEY を設定
+vim .env
 ```
+
+`.env` の設定例:
+
+```bash
+USER_ID=1000
+GROUP_ID=1000
+KAGGLE_USERNAME=your_username
+KAGGLE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+**確認:**
+
+```bash
+# 設定が正しいか確認
+cat .env | grep KAGGLE
+# KAGGLE_USERNAME=your_username
+# KAGGLE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+**重要:** この設定でホストと Docker コンテナの両方で Kaggle API が使えます。
 
 ### Step 3: データ置き場の作成（2分）
 
@@ -362,13 +371,14 @@ cd ~/kaggle/competitions/kaggle-s6e2-heart/docker
 docker compose up
 ```
 
-### Q2. `kaggle.json` が見つからないエラー
+### Q2. Kaggle API 認証エラー
 
 **解決策:**
 
 ```bash
-ls -la ~/.kaggle/kaggle.json
-# 存在しない場合は Step 2 を再実行
+# .env ファイルを確認
+cat .env | grep KAGGLE
+# KAGGLE_USERNAME と KAGGLE_KEY が設定されていない場合は Step 2 を再実行
 ```
 
 ### Q3. データが見つからないエラー
@@ -433,8 +443,7 @@ def create_features(df):
 ### 初回セットアップ
 
 - [ ] リポジトリをクローン
-- [ ] `~/.kaggle/kaggle.json` を配置
-- [ ] `chmod 600 ~/.kaggle/kaggle.json` を実行
+- [ ] `.env` ファイルを作成し `KAGGLE_USERNAME` と `KAGGLE_KEY` を設定
 - [ ] `~/kaggle_data/` を作成・権限設定
 - [ ] Docker イメージをビルド（40GB超になればOK）
 - [ ] データをダウンロード・配置

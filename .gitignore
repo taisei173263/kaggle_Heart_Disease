@@ -38,8 +38,8 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Kaggle
-kaggle.json
+# Kaggle（.env に認証情報を含むため除外）
+# kaggle.json は不要（.env で完結）
 
 # Logs（ジョブログは logs/ に集約）
 logs/*
