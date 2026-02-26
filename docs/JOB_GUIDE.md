@@ -8,6 +8,7 @@
 
 | ファイル | 用途 | 実行環境 |
 |---------|------|----------|
+| **`scripts/setup_build_job.sh`** | **環境構築（データ置き場 + Docker ビルド）を計算ノードで実行** | ホスト（計算ノード） |
 | **`scripts/submit_job.sh`** | **計算ノードで Docker 内コマンドを 1 回実行**（推奨） | Docker コンテナ内 |
 | `scripts/job.sh` | シンプルなジョブスクリプト（main.py実行） | ホスト直接（uv run） |
 | `scripts/job_template.sh` | カスタマイズ用テンプレート（詳細なコメント付き） | ホスト直接（uv run） |
@@ -19,6 +20,51 @@
 - **`job.sh` / `job_template.sh` / `job_array.sh`**: ホスト上で直接 `uv run python` を実行。uv や Python がホストにインストールされている必要がある。
 
 **初心者には `submit_job.sh` を推奨します。** Docker 環境を使うことで、チーム全員が同じ環境で実行でき、「自分の環境では動くのに…」という問題を防げます。
+
+---
+
+## 🔧 setup_build_job.sh（環境構築を計算ノードで実行）
+
+ログインノードに負荷をかけず、**データ置き場の作成**と **Docker イメージのビルド**を計算ノードで行うためのジョブです。ビルドは 30 分〜1 時間かかるため、ログインノードで実行すると vi などが重くなります。
+
+**事前にログインノードで行うこと:**
+- リポジトリのクローン
+- `.env` の作成と `KAGGLE_USERNAME` / `KAGGLE_KEY` の設定
+
+### 使い方（プロジェクトルートで）
+
+```bash
+mkdir -p logs
+qsub scripts/setup_build_job.sh
+```
+
+### オプション
+
+```bash
+# キャッシュを使わず完全ビルド（初回推奨・デフォルト）
+qsub scripts/setup_build_job.sh
+
+# キャッシュを活用してビルド（再ビルド時）
+qsub -v BUILD_OPTS="" scripts/setup_build_job.sh
+```
+
+### ログの確認
+
+```bash
+qstat
+tail -f logs/setup-build.o<ジョブID>
+tail -f logs/setup-build.e<ジョブID>
+```
+
+### リソース（デフォルト）
+
+- キュー: `tsmall`
+- GPU: 0（ビルドは CPU のみ）
+- メモリ: 24GB
+
+### 注意
+
+計算ノードごとに Docker のイメージが共有されていない環境では、このジョブでビルドしたイメージは**その計算ノードにだけ**存在します。その場合は、ビルド後に `docker save` で共有ストレージに保存し、他ノードや他ユーザーが `docker load` する運用を検討してください（[TEAM_GUIDE.md](../TEAM_GUIDE.md) の「イメージの共有ストレージへの保存」を参照）。
 
 ---
 

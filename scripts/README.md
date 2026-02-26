@@ -24,10 +24,19 @@
 
 | ファイル | 用途 |
 |---------|------|
+| **`setup_build_job.sh`** | **環境構築（データ置き場 + Docker ビルド）を計算ノードで実行** |
 | **`submit_job.sh`** | **計算ノードで Docker 内コマンドを1回実行**（推奨・汎用） |
 | `job.sh` | シンプルなジョブスクリプト（main.py実行） |
 | `job_template.sh` | カスタマイズ用テンプレート（詳細なコメント付き） |
 | `job_array.sh` | アレイジョブ（複数パラメータの並列実行） |
+
+**setup_build_job.sh の使い方（ログインノード負荷を避けたい場合）:**
+
+```bash
+mkdir -p logs
+qsub scripts/setup_build_job.sh
+# ログ: tail -f logs/setup-build.o<ジョブID>
+```
 
 **submit_job.sh の使い方（Login ノードから投入）:**
 

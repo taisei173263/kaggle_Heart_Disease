@@ -92,6 +92,20 @@ chmod o+x ~
 
 ### Step 4: Dockerイメージのビルド（30分〜1時間）
 
+**方法A: 計算ノードでジョブとして実行（推奨・ログインノードが重くならない）**
+
+```bash
+cd ~/kaggle/competitions/kaggle-s6e2-heart
+mkdir -p logs
+qsub scripts/setup_build_job.sh
+```
+
+- ジョブの状態: `qstat`
+- ログ確認: `tail -f logs/setup-build.o<ジョブID>`
+- 詳細は [docs/JOB_GUIDE.md](docs/JOB_GUIDE.md) の「setup_build_job.sh」を参照
+
+**方法B: ログインノードで直接実行**
+
 **⚠️ 重要: 必ず `docker/` フォルダに移動してから実行すること**
 
 ```bash
