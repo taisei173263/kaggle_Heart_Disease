@@ -1,107 +1,143 @@
 """
-学習用スクリプト・ベースライン（LightGBM CV → 提出ファイル作成）。
-コンテナ内の /data を参照（~/kaggle_data にマウント想定）。
+ベースライン学習スクリプト。
 
-使い方:
-  python src/train.py
-  または: qsub scripts/submit_job.sh src/train.py
+Kaggle コンペの「メインループ」を理解するためのシンプルな実装。
+やっていること:
+  1. データを読み込む
+  2. 前処理を適用する（src/preprocessing.py）
+  3. 5-fold Cross Validation（交差検証）でモデルを学習する
+  4. OOF（Out-of-Fold）スコアを表示して提出ファイルを保存する
+
+実行方法:
+    python -m src.train
+    python -m src.train --seed 42 --folds 5
 """
-import pandas as pd
+from __future__ import annotations
+
+import argparse
 import numpy as np
-import lightgbm as lgb
-from sklearn.model_selection import StratifiedKFold
+import pandas as pd
 from sklearn.metrics import roc_auc_score
-import os
 
-# --- 設定 ---
-DATA_DIR = "/data/datasets/raw"
-OUTPUT_DIR = "/data/outputs"
-MODEL_DIR = "/data/models"
-ID_COL = "id"
-TARGET_COL = "Heart Disease"  # コンペの列名（スペースあり）
-N_FOLDS = 5
-SEED = 42
-
-# LightGBM のデバイス: Kaggle公式イメージの LightGBM は CPU 版のためデフォルトは "cpu"
-# GPU で GBDT を使う場合は CatBoost / XGBoost を検討（公式イメージで GPU 対応済み）
-LGBM_DEVICE = os.environ.get("LGBM_DEVICE", "cpu")  # "cpu"（デフォルト） | "cuda"（CUDA版ビルド時のみ）
-
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(MODEL_DIR, exist_ok=True)
+from src.config import (
+    DATA_DIR,
+    DATA_OUTPUT_DIR,
+    MODELS_DIR,
+    ID_COL,
+    TARGET_COL,
+    FEATURE_NAMES,
+    DEFAULT_SEED,
+)
+from src.data import load_train_test
+from src.utils import set_seed
+from src.cv import get_cv_splits
+from src.preprocessing import clean_data
+from src.models.gbdt import GBDTPipeline
 
 
-def train():
-    print("=== データ読み込み ===")
-    train_df = pd.read_csv(f"{DATA_DIR}/train.csv")
-    test_df = pd.read_csv(f"{DATA_DIR}/test.csv")
-    sub_df = pd.read_csv(f"{DATA_DIR}/sample_submission.csv")
+def _ensure_dirs():
+    """出力ディレクトリが存在しない場合に作成する。"""
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"Train shape: {train_df.shape}")
 
-    # 簡易的な前処理（数値列のみ使用、欠損埋め）
-    num_cols = train_df.select_dtypes(include=[np.number]).columns.tolist()
-    features = [c for c in num_cols if c not in [ID_COL, TARGET_COL]]
+def main():
+    # --- 引数 ---
+    # 最小限のオプションのみ。複雑な引数は後から必要になったら追加する。
+    parser = argparse.ArgumentParser(description="LightGBM ベースライン学習")
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="乱数シード（再現性のため）")
+    parser.add_argument("--folds", type=int, default=5, help="CV の分割数")
+    args = parser.parse_args()
 
-    X = train_df[features]
-    y = train_df[TARGET_COL]
-    X_test = test_df[features]
+    set_seed(args.seed)
+    _ensure_dirs()
 
-    print(f"Features: {len(features)} cols")
+    # =========================================================
+    # Step 1: データ読み込み
+    # =========================================================
+    print("=== Step 1: データ読み込み ===")
+    train_df, test_df, sub_df = load_train_test(data_dir=DATA_DIR, optimize=True)
+    print(f"  Train: {train_df.shape}, Test: {test_df.shape}")
 
-    # --- Cross Validation ---
-    kf = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED)
-    oof_preds = np.zeros(len(X))
-    test_preds = np.zeros(len(X_test))
+    # ターゲットを 0/1 整数に統一
+    # （"Presence"/"Absence" 形式と 0/1 形式が混在する場合に対応）
+    y_raw = train_df[TARGET_COL]
+    if y_raw.dtype == object or str(y_raw.iloc[0]) in ("Presence", "Absence"):
+        y = (y_raw == "Presence").astype(np.int32).values
+    else:
+        y = np.asarray(y_raw, dtype=np.int32)
 
-    for fold, (train_idx, val_idx) in enumerate(kf.split(X, y)):
-        print(f"\n--- Fold {fold + 1} ---")
-        X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
-        X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
+    # =========================================================
+    # Step 2: 前処理
+    # =========================================================
+    # clean_data は src/preprocessing.py で実装してください。
+    # 欠損補完・型変換などの基本的な前処理を行います。
+    print("=== Step 2: 前処理 ===")
+    train_df = clean_data(train_df)
+    test_df = clean_data(test_df)
 
-        params = {
-            "objective": "binary",
-            "metric": "auc",
-            "boosting_type": "gbdt",
-            "n_estimators": 1000,
-            "learning_rate": 0.05,
-            "device": LGBM_DEVICE,  # 公式イメージは CPU 版のため "cpu" で運用
-            "verbose": -1,
-            "random_state": SEED,
-        }
+    # 特徴量だけを抽出
+    X = train_df[FEATURE_NAMES].copy()
+    X_test = test_df[FEATURE_NAMES].copy()
 
-        model = lgb.LGBMClassifier(**params)
+    # =========================================================
+    # Step 3: 5-fold Cross Validation
+    # =========================================================
+    # Kaggle の「メインループ」。ここが理解できれば後は応用です。
+    #
+    # OOF (Out-of-Fold) とは?
+    #   各 fold の検証データへの予測を集めたもの。
+    #   全 train データに対してリーク（情報漏洩）なしで評価できる。
+    #   → OOF スコア ≈ Public LB スコア になるのが理想。
+    #
+    # なぜ 5-fold CV をするのか?
+    #   データを5分割し、4分割で学習・1分割で評価を5回繰り返す。
+    #   1回だけ train/val に分けるより、評価の安定性が大幅に向上する。
+    print(f"=== Step 3: {args.folds}-fold CV (seed={args.seed}) ===")
 
-        callbacks = [
-            lgb.early_stopping(stopping_rounds=50, verbose=True),
-            lgb.log_evaluation(50),
-        ]
+    oof = np.zeros(len(X), dtype=np.float32)
+    test_preds = np.zeros(len(X_test), dtype=np.float32)
 
-        model.fit(
-            X_train,
-            y_train,
-            eval_set=[(X_val, y_val)],
-            eval_metric="auc",
-            callbacks=callbacks,
-        )
+    splits = get_cv_splits(X, y, n_splits=args.folds, random_state=args.seed)
 
-        val_pred = model.predict_proba(X_val)[:, 1]
-        oof_preds[val_idx] = val_pred
-        test_preds += model.predict_proba(X_test)[:, 1] / N_FOLDS
+    for fold, (tr_idx, val_idx) in enumerate(splits):
+        X_tr, X_val = X.iloc[tr_idx], X.iloc[val_idx]
+        y_tr, y_val = y[tr_idx], y[val_idx]
 
-        score = roc_auc_score(y_val, val_pred)
-        print(f"Fold {fold + 1} AUC: {score:.4f}")
+        # モデル学習
+        # GBDTPipeline のパラメータは src/models/gbdt.py を参照
+        model = GBDTPipeline(random_state=args.seed)
+        model.fit(X_tr, y_tr, X_val, y_val)
 
-        model.booster_.save_model(f"{MODEL_DIR}/lgbm_fold{fold+1}.txt")
+        # OOF 予測
+        oof[val_idx] = model.predict_proba(X_val)
 
-    # --- 結果集計 ---
-    total_score = roc_auc_score(y, oof_preds)
-    print(f"\n=== CV Score (AUC): {total_score:.4f} ===")
+        # テスト予測（各 fold の平均をとる）
+        test_preds += model.predict_proba(X_test) / args.folds
 
-    sub_df[TARGET_COL] = test_preds
-    sub_path = f"{OUTPUT_DIR}/submission_v1.csv"
-    sub_df.to_csv(sub_path, index=False)
-    print(f"✅ Submission saved to: {sub_path}")
+        fold_auc = roc_auc_score(y_val, oof[val_idx])
+        print(f"  Fold {fold + 1}/{args.folds}  AUC: {fold_auc:.4f}")
+
+    # =========================================================
+    # Step 4: CV スコアの確認と提出ファイルの保存
+    # =========================================================
+    # OOF AUC = 全 fold のリーク無し評価スコア
+    # これが Public LB と近い値になっていれば CV が機能している証拠
+    oof_auc = roc_auc_score(y, oof)
+    print(f"\n=== OOF AUC: {oof_auc:.4f} ===")
+
+    # OOF と test 予測を保存（アンサンブルで後で使う）
+    np.save(MODELS_DIR / "oof_gbdt.npy", oof)
+    np.save(MODELS_DIR / "test_gbdt.npy", test_preds)
+
+    # 提出ファイルを生成
+    sub_out = sub_df.copy()
+    sub_out[TARGET_COL] = test_preds
+    out_path = DATA_OUTPUT_DIR / "submission.csv"
+    sub_out.to_csv(out_path, index=False)
+    print(f"提出ファイルを保存しました: {out_path}")
+    print(f"提出: ./scripts/submit.sh {out_path} 'LightGBM baseline'")
 
 
 if __name__ == "__main__":
-    train()
+    main()

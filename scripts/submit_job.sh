@@ -3,9 +3,12 @@
 # SGE ジョブ投入スクリプト（計算ノード上で Docker 内コマンドを実行）
 #
 # 使い方（プロジェクトルートで。事前に mkdir -p logs を推奨）:
-#   qsub scripts/submit_job.sh src/train.py --epochs 10
-#   qsub scripts/submit_job.sh python src/train.py --epochs 10
-#   qsub -N my-exp scripts/submit_job.sh src/train.py --config configs/exp1.yaml
+#   学習（時間がかかるのでジョブで投入）:
+#     qsub scripts/submit_job.sh python -m src.train --seed 42 --folds 5
+#     qsub -N gbdt-v1 scripts/submit_job.sh python -m src.train --folds 5
+#   推論（学習完了後、短いのでローカル or ジョブどちらでも可）:
+#     python -m src.predict --checkpoint models --model gbdt
+#  その他:
 #   qsub scripts/submit_job.sh python -c "print(1+1)"
 #
 # =============================================================================
@@ -51,10 +54,10 @@ fi
 
 # 引数がなければ usage を表示して終了
 if [ $# -eq 0 ]; then
-    echo "Usage: qsub scripts/submit_job.sh [python] <script.py> [args...]"
-    echo "  Example: qsub scripts/submit_job.sh src/train.py --epochs 10"
-    echo "  Example: qsub scripts/submit_job.sh python src/train.py --epochs 10"
-    echo "  Example: qsub scripts/submit_job.sh python -c \"print(1+1)\""
+    echo "Usage: qsub scripts/submit_job.sh [python] <script_or_module> [args...]"
+    echo "  学習（推奨）: qsub scripts/submit_job.sh python -m src.train --seed 42 --folds 5"
+    echo "  推論:        qsub scripts/submit_job.sh python -m src.predict --checkpoint models --model gbdt"
+    echo "  その他:      qsub scripts/submit_job.sh python -c \"print(1+1)\""
     exit 1
 fi
 

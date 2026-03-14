@@ -39,6 +39,8 @@ services:
     
     # 環境変数
     environment:
+      # パイプライン用: データ・モデル・提出を /data に統一（マウント先が書き込み可能なため）
+      - DATA_DIR=/data/datasets/raw
       # JupyterLab設定
       - JUPYTER_ENABLE_LAB=yes
     

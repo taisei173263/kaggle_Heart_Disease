@@ -35,7 +35,7 @@ cd kaggle/competitions/kaggle-s6e2-heart
 
 ### Step 2: Kaggle API認証の設定（5分）
 
-**このプロジェクトの認証方式:** `.env` ファイルのみで完結（`~/.kaggle/kaggle.json` は不要）
+**認証方法:** `.env` の `KAGGLE_USERNAME` / `KAGGLE_KEY` か、`~/.kaggle/kaggle.json` のどちらか一方を設定
 
 #### 2-1. Kaggle APIトークンの取得
 
@@ -91,8 +91,11 @@ pip install --user kaggle
 kaggle --version
 ```
 
-- **Docker 内**では Kaggle 公式イメージに CLI が含まれているため不要です。
-- ホストに Python がない場合は、データDL・提出はコンテナ内で実行してください。
+**pip が見つからない場合:**
+
+- `pip3` を試す: `pip3 install --user kaggle`
+- `python3 -m pip` を試す: `python3 -m pip install --user kaggle`
+- ホストに Python がない・pip を入れたくない場合は、**データDL・提出は Docker 内で実行**すればよいです（コンテナに Kaggle CLI が入っているため、ホストにインストールは不要）。
 
 ### Step 3: データ置き場の作成（2分）
 
@@ -402,13 +405,9 @@ docker compose up
 
 ### Q2. Kaggle API 認証エラー
 
-**解決策:**
+**Missing username/key:** `.env` に `KAGGLE_USERNAME` / `KAGGLE_KEY` を設定するか、`~/.kaggle/kaggle.json` を配置（Step 2 参照）。
 
-```bash
-# .env ファイルを確認
-cat .env | grep KAGGLE
-# KAGGLE_USERNAME と KAGGLE_KEY が設定されていない場合は Step 2 を再実行
-```
+**401 Unauthorized:** トークンが無効・期限切れの可能性あり。Kaggle → Account → API → **Create New API Token** で再発行し、`.env` または `~/.kaggle/kaggle.json` を更新してから再度提出する。
 
 ### Q3. データが見つからないエラー
 

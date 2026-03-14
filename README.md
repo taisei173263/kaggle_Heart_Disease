@@ -97,10 +97,10 @@ cd kaggle-s6e2-heart
 
 ### 2. Kaggle API認証の設定
 
-**重要な変更点:** このプロジェクトでは、Kaggle API の認証を **`.env` ファイルのみ** で管理します。
+**認証方法（どちらか一方で可）:**
 
 - ✅ **推奨**: プロジェクト直下の `.env` に `KAGGLE_USERNAME` と `KAGGLE_KEY` を設定
-- ❌ **不要**: `~/.kaggle/kaggle.json` の配置は不要（従来の方法）
+- ✅ **代替**: `~/.kaggle/kaggle.json` を配置（Kaggle でダウンロードしたファイルを `mv` し `chmod 600`）
 
 **メリット:**
 - プロジェクト内で認証情報が完結（`/home/taisei/kaggle/competitions` 以下のみ）
@@ -163,8 +163,22 @@ uv pip install kaggle
 kaggle --version
 ```
 
+**pip が見つからない場合:**
+
+- `pip3` を試す: `pip3 install --user kaggle`
+- `python -m pip` を試す: `python -m pip install --user kaggle` または `python3 -m pip install --user kaggle`
+- ホストに Python が入っていない・pip を入れたくない場合は、**データDL・提出は Docker 内で行う**（下記）。その場合はホストに Kaggle CLI は不要です。
+
+```bash
+# コンテナを起動したうえで
+cd docker && docker compose run --rm app bash
+
+# コンテナ内で
+kaggle competitions download -c playground-series-s6e2
+kaggle competitions submit -c playground-series-s6e2 -f /workspace/data/output/submission.csv -m "message"
+```
+
 - **Docker コンテナ内**では Kaggle 公式イメージに既に Kaggle CLI が含まれているため、追加インストールは不要です。
-- ホストに Python がない場合は、データのダウンロード・提出はコンテナ内で行ってください（`docker compose exec app kaggle competitions download -c playground-series-s6e2` など）。
 
 ### 3. Docker環境のビルド
 
@@ -400,6 +414,16 @@ git push origin main
 
 ---
 
+## 🏆 勝ちパイプライン（LR / GBDT / アンサンブル）
+
+再現性の高い学習パイプライン（fold 内 TE、CV 設計、アンサンブル）は **`docs/PIPELINE.md`** を参照してください。既存の `data/output/`・`models/` と **`scripts/submit_job.sh`** に合わせてあります。
+
+- 学習: `qsub scripts/submit_job.sh python -m src.train --model lr --folds 5`（または `--model gbdt`）
+- 推論: `python -m src.predict --checkpoint models --model lr` → `data/output/submission.csv`
+- アンサンブル: `python -m src.ensemble` → `data/output/submission_ensemble_*.csv`
+
+---
+
 ## 📤 Kaggleへの提出
 
 ### 方法1: スクリプトから提出
@@ -537,24 +561,31 @@ qsub scripts/job_array.sh
 
 ### Q1. Kaggle API 認証エラー
 
-**エラー例:**
+**エラー例1:** `Error: Missing username/key in configuration.`
 
-```
-Error: Missing username/key in configuration.
-```
-
-**解決策:**
+**解決策:** `.env` または `~/.kaggle/kaggle.json` のどちらかを設定する。
 
 ```bash
-# .env ファイルが存在するか確認
-ls -la .env
-
-# 存在しない場合は .env.example からコピー
-cp .env.example .env
-
+# .env を使う場合
+ls -la .env || cp .env.example .env
 # KAGGLE_USERNAME と KAGGLE_KEY を設定（「2. Kaggle API認証の設定」を参照）
 vim .env
 ```
+
+```bash
+# ~/.kaggle/kaggle.json を使う場合（Kaggle で Create New API Token でダウンロード）
+mkdir -p ~/.kaggle
+mv ~/Downloads/kaggle.json ~/.kaggle/
+chmod 600 ~/.kaggle/kaggle.json
+```
+
+**エラー例2:** `401 Client Error: Unauthorized for url: .../submission-url`
+
+トークンが無効・期限切れの可能性があります。
+
+1. [Kaggle](https://www.kaggle.com/) → **Account** → **API** → **Create New API Token** で新しいトークンを発行
+2. ダウンロードした `kaggle.json` の `username` と `key` を `.env` の `KAGGLE_USERNAME` / `KAGGLE_KEY` に上書きするか、`~/.kaggle/kaggle.json` を新しいファイルで置き換え
+3. 再度 `./scripts/submit.sh data/output/submission.csv "メッセージ"` を実行
 
 ### Q2. コンテナ内で作成したファイルが root 権限になる
 
